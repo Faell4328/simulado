@@ -1,0 +1,40 @@
+{
+  "id": "tjsp-2023",
+  "titulo": "TJ-SP — Escrevente (exemplo)",
+  "banca": "FGV",
+  "orgao": "TJ-SP",
+  "ano": 2023,
+  "tempoMin": 8,
+  "questoes": [
+    {
+      "materia": "Português",
+      "tipo": "multipla",
+      "enunciado": "Assinale a alternativa em que a concordância verbal está correta.",
+      "alternativas": [
+        "Fazem cinco anos que ele partiu.",
+        "Houveram muitos problemas na prova.",
+        "Faz cinco anos que ele partiu.",
+        "Existe várias soluções possíveis.",
+        "Deve haver menos erros da próxima vez, disseram os alunos que estava cansado."
+      ],
+      "gabarito": 2,
+      "comentario": "O verbo \"fazer\" indicando tempo é impessoal e fica no singular: \"Faz cinco anos\"."
+    },
+    {
+      "materia": "Direito Administrativo",
+      "tipo": "multipla",
+      "enunciado": "São princípios expressos da Administração Pública no art. 37 da CF, EXCETO:",
+      "alternativas": ["Legalidade", "Impessoalidade", "Moralidade", "Razoabilidade", "Publicidade"],
+      "gabarito": 3,
+      "comentario": "Os princípios expressos são LIMPE. Razoabilidade é princípio implícito."
+    },
+    {
+      "materia": "Raciocínio Lógico",
+      "tipo": "multipla",
+      "enunciado": "Se todo A é B, e nenhum B é C, então:",
+      "alternativas": ["Todo A é C.", "Algum A é C.", "Nenhum A é C.", "Todo C é A.", "Nada se pode concluir."],
+      "gabarito": 2,
+      "comentario": "Se todo A está contido em B, e B não intersecta C, então nenhum A é C."
+    }
+  ]
+}

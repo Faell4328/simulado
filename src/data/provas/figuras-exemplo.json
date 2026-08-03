@@ -1,0 +1,27 @@
+{
+  "id": "figuras-exemplo",
+  "titulo": "Questões com figura (exemplo)",
+  "banca": "ENEM",
+  "orgao": "INEP",
+  "ano": 2024,
+  "tempoMin": 5,
+  "questoes": [
+    {
+      "materia": "Matemática",
+      "tipo": "multipla",
+      "imagem": "data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='260' height='200'><polygon points='30,170 230,170 30,30' fill='none' stroke='black' stroke-width='3'/><text x='120' y='190' font-size='16'>4</text><text x='6' y='105' font-size='16'>3</text><text x='140' y='95' font-size='16'>?</text></svg>",
+      "fonte": "Figura ilustrativa (não está em escala).",
+      "enunciado": "No triângulo retângulo da figura, os catetos medem 3 e 4. Qual é a medida da hipotenusa?",
+      "alternativas": ["5", "6", "7", "12", "25"],
+      "gabarito": 0,
+      "comentario": "Teorema de Pitágoras: h² = 3² + 4² = 9 + 16 = 25, logo h = 5."
+    },
+    {
+      "materia": "Geografia",
+      "tipo": "certo_errado",
+      "enunciado": "A linha do Equador divide a Terra nos hemisférios Norte e Sul.",
+      "gabarito": true,
+      "comentario": "Correto. O Equador é o paralelo de latitude 0°, que separa os hemisférios Norte e Sul."
+    }
+  ]
+}

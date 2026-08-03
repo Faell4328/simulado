@@ -1,0 +1,95 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+* { box-sizing: border-box; }
+
+/* Paleta em RGB (pro alpha do Tailwind). Claro por padrão; .dark sobrescreve. */
+:root {
+  color-scheme: light;
+  --c-primaria: 8 112 240;
+  --c-primaria-escura: 10 90 208;
+  --c-primaria-clara: 233 242 254;
+  --c-tinta: 15 23 42;
+  --c-muted: 71 85 105;
+  --c-fundo: 248 250 252;
+  --c-cartao: 255 255 255;
+  --c-linha: 226 232 240;
+  --c-acerto: 22 163 74;
+  --c-erro: 220 38 38;
+}
+
+.dark {
+  color-scheme: dark;
+  --c-primaria: 56 141 255;
+  --c-primaria-escura: 37 120 240;
+  --c-primaria-clara: 30 44 74;
+  --c-tinta: 226 232 240;
+  --c-muted: 148 163 184;
+  --c-fundo: 15 23 42;
+  --c-cartao: 30 41 59;
+  --c-linha: 51 65 85;
+  --c-acerto: 74 222 128;
+  --c-erro: 248 113 113;
+}
+
+body {
+  margin: 0;
+  background: rgb(var(--c-fundo));
+  color: rgb(var(--c-tinta));
+  font-family: 'Geist Sans', system-ui, sans-serif;
+  overflow-x: hidden;
+}
+
+/* Campos de formulário seguem o tema. Sem isto caem no default do navegador:
+   caixa branca no escuro ou texto de baixo contraste. (checkbox/radio/range/file
+   ficam com a aparência nativa, controlada pelo color-scheme.) */
+input:not([type='checkbox']):not([type='radio']):not([type='range']):not([type='file']),
+textarea,
+select {
+  background-color: rgb(var(--c-cartao));
+  color: rgb(var(--c-tinta));
+}
+input::placeholder, textarea::placeholder { color: rgb(var(--c-muted)); }
+
+/* No escuro, os fundos claros fixos (verde/vermelho/âmbar-50) viram versões
+   escuras translúcidas, mantendo contraste com o texto colorido por cima. */
+.dark .bg-green-50 { background-color: rgb(22 101 52 / .35); }
+.dark .bg-red-50 { background-color: rgb(153 27 27 / .35); }
+.dark .bg-amber-50 { background-color: rgb(120 53 15 / .35); }
+.dark .bg-amber-100 { background-color: rgb(120 53 15 / .5); }
+.dark .text-amber-700 { color: rgb(252 211 77); }
+.dark .text-amber-600 { color: rgb(251 191 36); }
+.dark .border-amber-400 { border-color: rgb(180 83 9); }
+.dark .border-amber-300 { border-color: rgb(146 64 14); }
+
+/* No escuro o logo (texto preto + azul) fica sem contraste. O invert vira o
+   preto em branco; o hue-rotate 180deg devolve o azul (que o invert jogaria
+   pra laranja). O alpha do PNG mantém o fundo transparente. */
+.dark .logo-simulado { filter: invert(1) hue-rotate(180deg); }
+
+/* Micro-animações premium */
+@keyframes sim-entrada {
+  from { opacity: 0; transform: translateY(10px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+.animar-entrada { animation: sim-entrada 0.35s cubic-bezier(0.22, 1, 0.36, 1); }
+
+/* fade puro (sem translateY) — pra telas de tela cheia, não gera scroll */
+@keyframes sim-fade { from { opacity: 0; } to { opacity: 1; } }
+.animar-fade { animation: sim-fade 0.3s ease; }
+
+@keyframes sim-pop {
+  0% { transform: scale(0.96); }
+  60% { transform: scale(1.02); }
+  100% { transform: scale(1); }
+}
+.animar-pop { animation: sim-pop 0.25s ease-out; }
+
+/* cartão com leve elevação no hover */
+.cartao-hover { transition: transform 0.18s ease, box-shadow 0.18s ease, border-color 0.18s ease; }
+.cartao-hover:hover { transform: translateY(-3px); box-shadow: 0 10px 24px -12px rgba(8, 112, 240, 0.35); }
+
+/* botões: leve pressão ao clicar */
+button { transition: transform 0.12s ease, background-color 0.15s ease, box-shadow 0.15s ease, border-color 0.15s ease; }
+

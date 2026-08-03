@@ -1,0 +1,31 @@
+{
+  "id": "pf-2022",
+  "titulo": "PF — Agente (exemplo)",
+  "banca": "Cebraspe",
+  "orgao": "PF",
+  "ano": 2022,
+  "tempoMin": 6,
+  "questoes": [
+    {
+      "materia": "Direito Constitucional",
+      "tipo": "certo_errado",
+      "enunciado": "A Constituição Federal de 1988 admite a pena de morte no Brasil em caso de guerra declarada.",
+      "gabarito": true,
+      "comentario": "Correto. A pena de morte é vedada, salvo em caso de guerra declarada (art. 5º, XLVII, a)."
+    },
+    {
+      "materia": "Informática",
+      "tipo": "certo_errado",
+      "enunciado": "Na internet, o protocolo HTTPS garante que os dados trafegados sejam criptografados.",
+      "gabarito": true,
+      "comentario": "Correto. O HTTPS usa TLS/SSL para criptografar a comunicação entre cliente e servidor."
+    },
+    {
+      "materia": "Matemática",
+      "tipo": "certo_errado",
+      "enunciado": "O número 1 é considerado um número primo.",
+      "gabarito": false,
+      "comentario": "Errado. Um número primo tem exatamente dois divisores distintos; o 1 tem apenas um."
+    }
+  ]
+}
