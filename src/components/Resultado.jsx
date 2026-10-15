@@ -76,11 +76,23 @@ export default function Resultado({ resultado, subtitulo, onVoltar, onRefazerErr
 
       <section className="flex flex-col gap-4">
         <div className="text-sm font-semibold text-muted">correção</div>
-        {detalhe.map((d, i) => (
-          <div key={d.questao.id} className="rounded-xl bg-cartao border border-linha p-4">
-            <Questao questao={d.questao} numero={i + 1} resposta={d.resposta} revelar />
-          </div>
-        ))}
+        {detalhe.map((d, i) => {
+          const status = d.resposta == null ? 'branco' : d.certa ? 'certo' : 'errado'
+          const borda = { branco: 'border-linha', certo: 'border-acerto', errado: 'border-erro' }[status]
+          const aviso = {
+            branco: { texto: 'Você deixou em branco essa questão', classe: 'bg-white text-black' },
+            certo: { texto: 'Você acertou essa questão', classe: 'bg-green-600 text-white' },
+            errado: { texto: 'Você errou essa questão', classe: 'bg-red-600 text-white' },
+          }[status]
+          return (
+            <div key={d.questao.id} className={`rounded-xl bg-cartao border p-4 ${borda}`}>
+              <div className="block mt-1 mb-5">
+                <span className={`py-2 px-2 rounded-md ${aviso.classe}`}>{aviso.texto}</span>
+              </div>
+              <Questao questao={d.questao} numero={i + 1} resposta={d.resposta} revelar />
+            </div>
+          )
+        })}
       </section>
     </main>
   )
