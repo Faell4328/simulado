@@ -1,5 +1,7 @@
 import { useRef, useState } from 'react'
-import { ArrowLeft, Timer, ListNumbers, UploadSimple, Trash, User, MagnifyingGlass } from '@phosphor-icons/react'
+import { ArrowLeft, Timer, ListNumbers, UploadSimple, Trash, User, MagnifyingGlass, DownloadSimpleIcon } from '@phosphor-icons/react'
+import { baixarProva} from '../lib/baixarArquivo.js'
+import { getProvasUsuario } from '../lib/provasUsuario'
 
 // Lista de provas: embutidas + as que o usuário subiu do PC. Busca por texto e
 // filtros por banca/órgão/ano, upload de prova (.json) e remover as próprias.
@@ -34,6 +36,13 @@ export default function ListaProvas({ provas, onSelecionar, onSubir, onRemover, 
     } catch (err) {
       setMsg({ tipo: 'erro', texto: err.message || 'não deu pra ler o arquivo' })
     }
+  }
+
+  const buscarProva = (idProva) => {
+    let provas = getProvasUsuario();
+    return provas.find((prova) => {
+      return prova.id === idProva;
+    });
   }
 
   return (
@@ -98,13 +107,22 @@ export default function ListaProvas({ provas, onSelecionar, onSubir, onRemover, 
               </div>
             </button>
             {p.origem === 'usuario' && (
-              <button
-                onClick={() => onRemover(p.id)}
-                className="px-3 text-muted hover:text-erro border-l border-linha"
-                aria-label="remover prova" title="remover"
-              >
-                <Trash size={18} />
-              </button>
+              <>
+                <button
+                  onClick={() => { let prova = buscarProva(p.id); prova ? baixarProva(prova) : setMsg({ tipo: "erro", texto: "Erro ao baixar a questão" }); }}
+                  className="px-3 text-muted hover:text-acerto border-l border-linha"
+                  aria-label="baixar prova" title="baixar"
+                >
+                  <DownloadSimpleIcon size={18} />
+                </button>
+                <button
+                  onClick={() => onRemover(p.id)}
+                  className="px-3 text-muted hover:text-erro border-l border-linha"
+                  aria-label="remover prova" title="remover"
+                >
+                  <Trash size={18} />
+                </button>
+              </>
             )}
           </div>
         ))}

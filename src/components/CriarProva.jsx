@@ -6,6 +6,7 @@ import { normalizarProva, validarProva } from '../data/conteudo.js'
 // Fonte única de verdade do formato/prompt: o próprio .md do repositório.
 import promptProva from '../../PROMPT-PROVA.md?raw'
 import { ArrowLeft, Plus, Trash, ImageSquare, DownloadSimple, FloppyDisk, Eye, UploadSimple, Warning, Robot, X, Copy, Check } from '@phosphor-icons/react'
+import { baixarMd, baixarProva } from '../lib/baixarArquivo.js'
 
 function novaQuestao() {
   return { tipo: 'multipla', materia: '', enunciado: '', textoApoio: '', imagem: '', precisaImagem: false, fonte: '', alternativas: ['', '', '', ''], gabarito: 0, comentario: '' }
@@ -93,16 +94,6 @@ export default function CriarProva({ onAdicionar, onVoltar }) {
   const avisos = validarProva(montarProva())
   const pendentes = questoes.filter((q) => q.precisaImagem && !q.imagem).length
 
-  const baixar = () => {
-    const prova = montarProva()
-    const blob = new Blob([JSON.stringify(prova, null, 2)], { type: 'application/json' })
-    const a = document.createElement('a')
-    a.href = URL.createObjectURL(blob)
-    a.download = `${prova.id}.json`
-    a.click()
-    URL.revokeObjectURL(a.href)
-  }
-
   const adicionar = () => {
     try { onAdicionar(montarProva()); setMsg('prova adicionada às suas provas!') }
     catch (e) { setMsg(e.message || 'não deu pra adicionar a prova.') }
@@ -166,7 +157,7 @@ export default function CriarProva({ onAdicionar, onVoltar }) {
         <button onClick={adicionar} className="flex items-center gap-2 px-5 py-2.5 rounded-lg bg-primaria text-white font-bold hover:bg-primaria-escura transition">
           <FloppyDisk size={18} weight="fill" /> adicionar às minhas provas
         </button>
-        <button onClick={baixar} className="flex items-center gap-2 px-5 py-2.5 rounded-lg border border-linha font-semibold hover:border-primaria transition">
+        <button onClick={() => { const prova = montarProva(); baixarProva(prova)}} className="flex items-center gap-2 px-5 py-2.5 rounded-lg border border-linha font-semibold hover:border-primaria transition">
           <DownloadSimple size={18} /> baixar .json
         </button>
       </div>
@@ -197,15 +188,6 @@ function ModalFormato({ onFechar }) {
     }
   }
 
-  const baixarMd = () => {
-    const blob = new Blob([promptProva], { type: 'text/markdown' })
-    const a = document.createElement('a')
-    a.href = URL.createObjectURL(blob)
-    a.download = 'PROMPT-PROVA.md'
-    a.click()
-    URL.revokeObjectURL(a.href)
-  }
-
   return (
     <div className="fixed inset-0 z-40 grid place-items-center bg-black/40 p-4 animar-fade" onClick={onFechar}>
       <div
@@ -231,7 +213,7 @@ function ModalFormato({ onFechar }) {
             {copiado ? <Check size={18} weight="bold" /> : <Copy size={18} weight="fill" />}
             {copiado ? 'copiado!' : 'copiar prompt'}
           </button>
-          <button onClick={baixarMd} className="flex items-center gap-2 px-5 py-2.5 rounded-lg border border-linha font-semibold hover:border-primaria transition">
+          <button onClick={() => { baixarMd('PROMPT-PROVA.md', [promptProva]); }} className="flex items-center gap-2 px-5 py-2.5 rounded-lg border border-linha font-semibold hover:border-primaria transition">
             <DownloadSimple size={18} /> baixar .md
           </button>
         </div>
