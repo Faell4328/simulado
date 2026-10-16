@@ -1,6 +1,6 @@
 import { useState } from 'react'
 import Questao from './Questao.jsx'
-import { House, ShareNetwork, ArrowClockwise } from '@phosphor-icons/react'
+import { House, ShareNetwork, ArrowClockwise, Robot } from '@phosphor-icons/react'
 import { copiarTexto } from '../lib/copiar.js'
 
 // Resultado: placar, estatísticas por matéria, refazer as erradas, compartilhar
@@ -23,6 +23,45 @@ export default function Resultado({ resultado, subtitulo, onVoltar, onRefazerErr
       catch (e) { if (e?.name === 'AbortError') return }
     }
     if (await copiarTexto(texto)) { setCopiado(true); setTimeout(() => setCopiado(false), 1800) }
+  }
+
+  const descreverAlternativa = (questao, valor) => {
+    if (valor === undefined || valor === null) return 'em branco'
+    if (questao.tipo === 'certo_errado') return valor ? 'Certo' : 'Errado'
+    const alternativa = (questao.alternativas || [])[valor]
+    return `${String.fromCharCode(65 + valor)}) ${alternativa ?? '?'}`
+  }
+
+  const formatarQuestao = (resultadoQuestao, indice) => {
+    const { questao, resposta } = resultadoQuestao
+    const linhas = [`${indice + 1}. [${questao.materia} · ${questao.banca} - ${questao.ano || ''}]`]
+    if (questao.textoApoio) linhas.push(`Texto de apoio: ${questao.textoApoio}`)
+    linhas.push(questao.enunciado)
+    ;(questao.alternativas || []).forEach((alternativa, posicao) => linhas.push(`${String.fromCharCode(65 + posicao)}) ${alternativa}`))
+    linhas.push(`Resposta marcada: ${descreverAlternativa(questao, resposta)}`)
+    linhas.push(`Gabarito: ${descreverAlternativa(questao, questao.gabarito)}`)
+    return linhas.join('\n')
+  }
+
+  const montarPrompt = async () => {
+    const questoesCertas = []
+    const questoesErradas = []
+    for (const resultadoQuestao of detalhe) {
+      (resultadoQuestao.certa ? questoesCertas : questoesErradas).push(resultadoQuestao)
+    }
+    const formatarLista = (resultados) =>
+      resultados.length
+        ? resultados.map((resultadoQuestao, indice) => formatarQuestao(resultadoQuestao, indice)).join('\n\n')
+        : '(nenhuma)'
+
+    const prompt =
+      `Atue como meu professor particular na revisão de um simulado que acabei de fazer. ` +
+      `Consolide o que eu acertei e me oriente no que errei, explicando o raciocínio de cada questão errada ` +
+      `e apontando o que devo reforçar.\n\n` +
+      `Resultado: acertei ${notaPrincipal} de ${total} questões.\n\n` +
+      `Questões que acertei:\n${formatarLista(questoesCertas)}\n\n` +
+      `Questões que errei:\n${formatarLista(questoesErradas)}`
+    if (await copiarTexto(prompt)) { setCopiado(true); setTimeout(() => setCopiado(false), 1800) }
   }
 
   return (
@@ -66,6 +105,9 @@ export default function Resultado({ resultado, subtitulo, onVoltar, onRefazerErr
         </button>
         <button onClick={onVoltar} className="flex items-center gap-2 px-5 py-2.5 rounded-lg border border-linha font-semibold hover:border-primaria transition">
           <House size={18} weight="fill" /> início
+        </button>
+        <button onClick={montarPrompt} className="flex items-center gap-2 px-5 py-2.5 rounded-lg border text-acerto border-linha font-semibold hover:border-acerto transition">
+          <Robot size={18} weight="fill" /> copiar prompt para revisar com a IA
         </button>
         {copiado && (
           <span className="absolute -top-9 left-1/2 -translate-x-1/2 whitespace-nowrap rounded-full bg-tinta text-fundo text-xs font-bold px-3 py-1">
