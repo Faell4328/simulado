@@ -1,4 +1,11 @@
 import { Check, X } from '@phosphor-icons/react'
+import ReactMarkdown, { defaultUrlTransform } from 'react-markdown'
+import remarkMath from 'remark-math'
+import rehypeMathjax from 'rehype-mathjax'
+
+// O defaultUrlTransform bloqueia o esquema `data:` (usado para imagens inline
+// em SVG/base64). Libera apenas data:image; o resto continua sanitizado.
+const urlTransform = (url) => (url.startsWith('data:image/') ? url : defaultUrlTransform(url))
 
 // Renderiza uma questão. revelar=true mostra o gabarito (colore certo/errado) e
 // bloqueia a interação — usado no modo estudo (após responder) e na correção.
@@ -13,20 +20,15 @@ export default function Questao({ questao, numero, resposta, onResponder, riscad
           <span>· {questao.banca}{questao.ano ? ` ${questao.ano}` : ''}</span>
         </div>
 
-        {questao.textoApoio && (
-          <div className="rounded-lg border border-linha bg-fundo text-sm text-tinta p-3 mb-3 whitespace-pre-line">
-            {questao.textoApoio}
-          </div>
-        )}
+        <div className="prose dark:prose-invert max-w-none">
+          <ReactMarkdown
+            remarkPlugins={[remarkMath]}
+            rehypePlugins={[rehypeMathjax]}
+            urlTransform={urlTransform}
+            children={questao.enunciado}
+          />
+        </div>
 
-        {questao.imagem && (
-          <figure className="mb-3">
-            <img src={questao.imagem} alt="figura da questão" className="max-w-full rounded-lg border border-linha mx-auto bg-white" />
-            {questao.fonte && <figcaption className="text-[11px] text-muted mt-1 text-right">{questao.fonte}</figcaption>}
-          </figure>
-        )}
-
-        <p className="text-tinta leading-relaxed">{questao.enunciado}</p>
       </div>
 
       {questao.tipo === 'certo_errado' ? (
@@ -62,8 +64,12 @@ export default function Questao({ questao, numero, resposta, onResponder, riscad
       )}
 
       {revelar && questao.comentario && (
-        <div className="rounded-lg bg-primaria-clara text-tinta text-sm p-3">
-          <span className="font-bold text-primaria">Comentário: </span>{questao.comentario}
+        <div className="prose prose-sm dark:prose-invert max-w-none rounded-lg bg-primaria-clara text-tinta text-sm p-3">
+          <ReactMarkdown
+            remarkPlugins={[remarkMath]}
+            rehypePlugins={[rehypeMathjax]}
+            children={"**Comentário**: "+questao.comentario}
+          />
         </div>
       )}
     </div>
@@ -97,7 +103,11 @@ function Alternativa({ letra, texto, rotulo, escolhida, riscada, estado, onClick
             {letra}
           </span>
         )}
-        <span className="flex-1">{texto || rotulo}</span>
+        <ReactMarkdown
+          remarkPlugins={[remarkMath]}
+          rehypePlugins={[rehypeMathjax]}
+          children={texto || rotulo}
+        />
         {estado === 'certo' && <Check size={18} weight="bold" />}
       </button>
       {onRiscar && !revelar && (

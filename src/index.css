@@ -41,6 +41,20 @@ body {
   overflow-x: hidden;
 }
 
+/* O Preflight do Tailwind aplica `svg { display: block }`, o que faz a fórmula
+   inline do MathJax (SVG dentro do mjx-container) virar bloco e cair pra linha
+   seguinte. Devolve o fluxo inline; as fórmulas de bloco continuam centralizadas
+   porque o próprio rehype-mathjax põe display:block no mjx-container[display]. */
+mjx-container[jax='SVG'] > svg { display: inline-block; }
+
+/* Imagens SVG inline (data:image/svg+xml) costumam ser linhas pretas sobre
+   fundo claro. O <img> isola o conteúdo, então não dá para usar currentColor.
+   `brightness(0)` força qualquer cor a preto (o que resolve o caso de a imagem
+   já vir branca/colorida); no escuro o `invert` vira branco. Assim a figura
+   sempre acompanha o tema, independente da cor original. */
+.prose img[src^='data:image/svg+xml'] { filter: brightness(0); }
+.dark .prose img[src^='data:image/svg+xml'] { filter: brightness(0) invert(1); }
+
 /* Campos de formulário seguem o tema. Sem isto caem no default do navegador:
    caixa branca no escuro ou texto de baixo contraste. (checkbox/radio/range/file
    ficam com a aparência nativa, controlada pelo color-scheme.) */

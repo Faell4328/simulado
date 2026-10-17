@@ -14,11 +14,6 @@ export function validarProva(prova) {
   if (!Array.isArray(prova.questoes) || prova.questoes.length === 0) avisos.push('sem "questoes"')
   ;(prova.questoes || []).forEach((q, i) => {
     if (!q.enunciado) avisos.push(`questão ${i + 1}: sem "enunciado"`)
-    // URL remota em imagem pode rastrear quem abre a prova (vaza IP). Prefira
-    // colar/embutir a imagem (vira data URI) — aí a prova fica portátil e sem rastreio.
-    if (typeof q.imagem === 'string' && /^https?:\/\//i.test(q.imagem)) {
-      avisos.push(`questão ${i + 1}: imagem por URL remota (pode rastrear quem abrir; prefira colar/embutir)`)
-    }
     if (q.tipo === 'certo_errado') {
       if (typeof q.gabarito !== 'boolean') avisos.push(`questão ${i + 1}: certo/errado precisa de gabarito boolean`)
     } else {
@@ -44,10 +39,6 @@ export function normalizarProva(prova, chave = '', origem = 'embutida') {
     banca: q.banca || banca,
     ano: q.ano || prova.ano,
     orgao: q.orgao || prova.orgao,
-    textoApoio: q.textoApoio,   // texto de apoio opcional (antes do enunciado)
-    // "PENDENTE" é só um marcador de autoria (imagem a colar no criador); ignora.
-    imagem: q.imagem && q.imagem !== 'PENDENTE' ? q.imagem : undefined,
-    fonte: q.fonte,             // crédito/legenda da imagem ou texto
     enunciado: q.enunciado,
     alternativas: q.alternativas,
     gabarito: q.gabarito,

@@ -16,6 +16,7 @@ do app "simulado". Siga as regras à risca.
 - Responda **apenas com o JSON**, sem texto antes ou depois, sem ``` e sem comentários.
 - JSON válido, UTF-8, em português do Brasil, com os acentos corretos.
 - Se a prova tiver muitas questões, inclua **todas** as que eu enviei.
+- As questões e alternativas suportam **Markdown** e **LaTeX** (renderizados com `react-markdown`, `remark-math` e `rehype-mathjax`).
 
 ### Estrutura do arquivo
 
@@ -76,62 +77,8 @@ do app "simulado". Siga as regras à risca.
 ### Campos opcionais de qualquer questão
 
 - `materia`: matéria da questão (usada nas estatísticas). Se não souber, use `"Geral"`.
-- `textoApoio`: texto de apoio/base exibido **antes** do enunciado.
-- `imagem`: figura da questão — veja a seção de imagens abaixo antes de usar.
-- `fonte`: crédito/legenda exibida abaixo da imagem
-  (ex.: "MORGAN, J. Disponível em: ... Acesso em: 5 maio 2024.").
 - `comentario`: explicação do gabarito, exibida na correção.
 - `banca`, `orgao`, `ano`: só se a questão diferir da prova (senão herda).
-
-### Questões com imagem (charge, gráfico, mapa, tabela)
-
-O campo `imagem` aceita **três** formas — e só uma delas serve pra você:
-
-| Valor de `imagem` | Quando usar | Você (IA) pode gerar? |
-|---|---|---|
-| `"data:image/jpeg;base64,/9j/4AA..."` | **Ideal.** Data URI embute a imagem no próprio JSON, então a prova fica 100% portátil (não depende de servidor nem de link vivo). | **Só se você puder executar código** — veja abaixo. |
-| `"https://site.com/charge.png"` | URL remota. O formato aceita, mas **evite**: o link morre com o tempo e quem abrir a prova entrega o IP pro servidor da imagem (rastreio). | Não — não invente URLs. |
-| `"PENDENTE"` (ou `"precisaImagem": true`) | Marca que a imagem falta e será colada depois, dentro do app. | **Sim** — é o seu plano B. |
-
-#### Se você PODE executar código (Python) e recebeu o PDF/arquivo da prova
-
-Esse é o melhor caminho — extraia as imagens de verdade, não descreva nem invente:
-
-1. Abra o arquivo e **extraia as imagens embutidas** de cada questão
-   (ex.: `PyMuPDF`/`fitz`, `pdfplumber`, `pdfimages`).
-2. **Redimensione para no máximo 1200px de largura** e salve como **JPEG
-   qualidade ~85%** — é exatamente o que o app faz quando alguém cola uma imagem,
-   e mantém o arquivo num tamanho utilizável.
-3. Converta para base64 e escreva em `imagem` como
-   `"data:image/jpeg;base64,<base64>"`.
-4. Cuide do **tamanho total**: o app guarda as provas no navegador
-   (localStorage, ~5 MB no total). Uma prova inteira do ENEM com dezenas de
-   imagens em alta resolução **não cabe** — por isso o passo 2 não é opcional.
-   Se mesmo assim passar de ~4 MB, faça um dos dois:
-   - baixe para ~900px / qualidade 75%; ou
-   - **divida em mais de um arquivo** (ex.: "ENEM 2023 — dia 1" e "dia 2"),
-     que é como a prova já é aplicada. O app aceita subir vários `.json`.
-
-#### Se você SÓ gera texto (sem execução de código)
-
-**Nunca escreva base64 "de cabeça"** — o resultado é uma imagem quebrada que
-falha silenciosamente. E não use URL. Marque como pendente:
-
-```json
-{
-  "materia": "Espanhol",
-  "tipo": "multipla",
-  "enunciado": "Na charge, a diversidade linguística está representada pelo uso de",
-  "precisaImagem": true,
-  "alternativas": ["...", "...", "...", "...", "..."],
-  "gabarito": 3
-}
-```
-
-`"precisaImagem": true` e `"imagem": "PENDENTE"` são equivalentes — use um dos dois.
-
-No app, essas questões aparecem **marcadas em amarelo ("falta imagem")** e a
-pessoa cola o print com **Ctrl+V** — aí vira data URI e fica embutida no arquivo.
 
 ### Regras importantes
 
@@ -139,43 +86,63 @@ pessoa cola o print com **Ctrl+V** — aí vira data URI e fica embutida no arqu
    tiver certeza, resolva a questão e escreva sua justificativa em `comentario`.
 2. Transcreva o enunciado **fiel ao original** (não resuma nem reescreva).
 3. Se a questão foi **anulada** na prova original, pule ela.
-4. Texto de apoio compartilhado por várias questões: repita em `textoApoio` de cada uma.
-5. Fórmulas/símbolos: use texto simples (ex.: `x²`, `√2`, `≤`). Não use LaTeX.
-6. Em `imagem`: **nunca** URL remota e **nunca** base64 inventado. Se puder
-   executar código, extraia a imagem real do arquivo (redimensionada, ver acima);
-   senão, `"precisaImagem": true`.
-7. **Não coloque `id` nas questões**: o app gera sozinho (`<idProva>-1`, `-2`, ...).
-   O `id` só existe no nível da prova, e mesmo lá é opcional.
+4. **Não coloque `id` nas questões**: o app gera sozinho (`<idProva>-1`, `-2`, ...). O `id` só existe no nível da prova, e mesmo lá é opcional.
+5. Se uma imagem vier como URL "solta", converta para a sintaxe Markdown (`![descrição](URL)`) para que ela seja exibida — vale tanto para URL local quanto da internet.
+6. Preserve a formatação LaTeX, incluindo os delimitadores `$...$` e `$$...$$`, e o Markdown.
 
 ### Exemplo completo e válido
 
 ```json
 {
-  "titulo": "TJ-SP — Escrevente",
-  "banca": "FGV",
-  "orgao": "TJ-SP",
-  "ano": 2023,
-  "tempoMin": 180,
+  "id": "markdown-exemplo",
+  "titulo": "Markdown + LaTeX (exemplo)",
+  "banca": "Exemplo",
+  "orgao": "Demo",
+  "ano": 2024,
+  "tempoMin": 5,
   "questoes": [
+    {
+      "materia": "Matemática",
+      "tipo": "multipla",
+      "enunciado": "No **triângulo retângulo** abaixo, os catetos medem $a$ e $b$, e a hipotenusa mede $c$.\n\n![triângulo retângulo](https://upload.wikimedia.org/wikipedia/commons/6/65/Triangle-right-abchpq.svg)\n\nPelo **Teorema de Pitágoras**:\n\n$$a^2 + b^2 = c^2$$\n\nSabendo que $a = 3$ e $b = 4$, qual é o valor de $c$?",
+      "alternativas": ["$c = 5$", "$c = 6$", "$c = 7$", "$c = 12$", "$c = 25$"],
+      "gabarito": 0,
+      "comentario": "Substituindo na fórmula: $c^2 = 3^2 + 4^2 = 9 + 16 = 25$, logo $c = 5$."
+    },
+    {
+      "materia": "Matemática",
+      "tipo": "multipla",
+      "enunciado": "A **fórmula de Bhaskara** resolve equações do 2º grau da forma $ax^2 + bx + c = 0$.\n\nDefinimos o *discriminante* como:\n\n$$\\Delta = b^2 - 4ac$$\n\ne as raízes são dadas por:\n\n$$x = \\frac{-b \\pm \\sqrt{\\Delta}}{2a}$$\n\nPara $a = 1$, $b = -5$ e $c = 6$, quais são as raízes da equação?",
+      "alternativas": [
+        "$x_1 = 2$ e $x_2 = 3$",
+        "$x_1 = -2$ e $x_2 = -3$",
+        "$x_1 = 1$ e $x_2 = 6$",
+        "$x_1 = -1$ e $x_2 = 6$",
+        "A equação não possui raízes reais."
+      ],
+      "gabarito": 0,
+      "comentario": "$\\Delta = (-5)^2 - 4 \\cdot 1 \\cdot 6 = 25 - 24 = 1$. Então $x = \\frac{5 \\pm 1}{2}$, ou seja, $x_1 = 3$ e $x_2 = 2$."
+    },
+    {
+      "materia": "Matemática",
+      "tipo": "certo_errado",
+      "enunciado": "Em um triângulo euclidiano, a soma dos ângulos internos é sempre igual a $180^\\circ$.",
+      "gabarito": true,
+      "comentario": "Correto: $\\alpha + \\beta + \\gamma = 180^\\circ$ para qualquer triângulo no plano."
+    },
     {
       "materia": "Português",
       "tipo": "multipla",
-      "enunciado": "Assinale a alternativa em que a concordância verbal está correta.",
+      "enunciado": "## Interpretação de texto\n\nLeia o trecho a seguir:\n\n> A leitura é uma viagem que não custa passagem.\n\nSobre o período acima, considere as afirmações:\n\n1. Trata-se de uma **metáfora**.\n2. O termo *viagem* é empregado em sentido **denotativo**.\n3. A oração *que não custa passagem* é uma **oração subordinada adjetiva restritiva**.\n\n---\n\nQual das alternativas apresenta **apenas** as afirmações corretas?\n\n*Dica: analise o sentido figurado e a função sintática.*",
       "alternativas": [
-        "Fazem cinco anos que ele partiu.",
-        "Faz cinco anos que ele partiu.",
-        "Fazem-se cinco anos que ele partiu.",
-        "Fizeram cinco anos que ele partiu."
+        "Apenas 1.",
+        "Apenas 1 e 3.",
+        "Apenas 2 e 3.",
+        "Apenas 3.",
+        "1, 2 e 3."
       ],
       "gabarito": 1,
-      "comentario": "O verbo 'fazer' indicando tempo decorrido é impessoal: fica sempre na 3ª pessoa do singular."
-    },
-    {
-      "materia": "Direito Constitucional",
-      "tipo": "certo_errado",
-      "enunciado": "Os direitos e garantias fundamentais previstos na Constituição são de aplicação imediata.",
-      "gabarito": true,
-      "comentario": "Art. 5º, §1º, da CF/88."
+      "comentario": "A afirmação 2 está incorreta porque *viagem* é usada em sentido **conotativo** (figurado)."
     }
   ]
 }
@@ -194,10 +161,7 @@ Agora converta a prova a seguir nesse formato:
 2. Abra o simulado e vá em **Provas → subir prova**, escolha o arquivo.
    - Ou em **Criar prova → carregar JSON**, se quiser revisar/editar antes.
    - Ou **carregar pasta**, na tela inicial, pra subir vários `.json` de uma vez.
-3. Se houver questões marcadas com `"precisaImagem": true`, elas aparecem em
-   **amarelo** no criador: clique na área da imagem e **cole (Ctrl+V)** o print,
-   ou escolha o arquivo. A imagem é embutida na prova.
-4. Salve com **"adicionar às minhas provas"** — ela passa a aparecer na lista
+3. Salve com **"adicionar às minhas provas"** — ela passa a aparecer na lista
    marcada como **"sua"** e as questões entram no banco de perguntas.
 
 Tudo fica salvo **só no seu navegador** (localStorage), sem servidor e sem login.

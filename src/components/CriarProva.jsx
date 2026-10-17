@@ -1,37 +1,28 @@
 import { useRef, useState } from 'react'
 import Questao from './Questao.jsx'
-import { arquivoParaDataURI } from '../lib/imagem.js'
 import { copiarTexto } from '../lib/copiar.js'
 import { normalizarProva, validarProva } from '../data/conteudo.js'
 // Fonte única de verdade do formato/prompt: o próprio .md do repositório.
 import promptProva from '../../PROMPT-PROVA.md?raw'
-import { ArrowLeft, Plus, Trash, ImageSquare, DownloadSimple, FloppyDisk, Eye, UploadSimple, Warning, Robot, X, Copy, Check } from '@phosphor-icons/react'
+import { ArrowLeft, Plus, Trash, DownloadSimple, FloppyDisk, Eye, UploadSimple, Robot, X, Copy, Check } from '@phosphor-icons/react'
 import { baixarMd, baixarProva } from '../lib/baixarArquivo.js'
 
 function novaQuestao() {
-  return { tipo: 'multipla', materia: '', enunciado: '', textoApoio: '', imagem: '', precisaImagem: false, fonte: '', alternativas: ['', '', '', ''], gabarito: 0, comentario: '' }
+  return { tipo: 'multipla', materia: '', enunciado: '', alternativas: ['', '', '', ''], gabarito: 0, comentario: '' }
 }
 
-// Uma questão do JSON carregado vira estado do editor. "PENDENTE" ou
-// "precisaImagem": true marcam questões que ainda precisam de imagem.
 function mapearQuestao(q) {
   const ce = q.tipo === 'certo_errado'
   return {
     tipo: ce ? 'certo_errado' : 'multipla',
     materia: q.materia || '',
     enunciado: q.enunciado || '',
-    textoApoio: q.textoApoio || '',
-    imagem: q.imagem && q.imagem !== 'PENDENTE' ? q.imagem : '',
-    precisaImagem: !!q.precisaImagem || q.imagem === 'PENDENTE',
-    fonte: q.fonte || '',
     alternativas: !ce && Array.isArray(q.alternativas) && q.alternativas.length ? q.alternativas : ['', '', '', ''],
     gabarito: ce ? !!q.gabarito : (typeof q.gabarito === 'number' ? q.gabarito : 0),
     comentario: q.comentario || '',
   }
 }
 
-// Criador de provas: formulário, carregar JSON (marcando quais faltam imagem),
-// anexar/colar imagem do PC (vira data URI embutido), prévia, salvar e baixar.
 export default function CriarProva({ onAdicionar, onVoltar }) {
   const [meta, setMeta] = useState({ titulo: '', banca: '', orgao: '', ano: '', tempoMin: 60 })
   const [questoes, setQuestoes] = useState([novaQuestao()])
@@ -55,8 +46,6 @@ export default function CriarProva({ onAdicionar, onVoltar }) {
         setMeta({ titulo: prova.titulo || '', banca: prova.banca || '', orgao: prova.orgao || '', ano: prova.ano || '', tempoMin: prova.tempoMin || 60 })
         const qs = (Array.isArray(prova) ? prova : prova.questoes || []).map(mapearQuestao)
         setQuestoes(qs.length ? qs : [novaQuestao()])
-        const faltam = qs.filter((q) => q.precisaImagem && !q.imagem).length
-        setMsg(faltam ? `JSON carregado. ${faltam} questão(ões) precisam de imagem, cole ou anexe nas marcadas.` : 'JSON carregado.')
       } catch { setMsg('JSON inválido.') }
     }
     reader.readAsText(file)
@@ -73,10 +62,6 @@ export default function CriarProva({ onAdicionar, onVoltar }) {
       tempoMin: Number(meta.tempoMin) || 60,
       questoes: questoes.map((q) => {
         const base = { materia: q.materia || undefined, tipo: q.tipo, enunciado: q.enunciado }
-        if (q.textoApoio) base.textoApoio = q.textoApoio
-        if (q.imagem) base.imagem = q.imagem
-        else if (q.precisaImagem) base.precisaImagem = true
-        if (q.fonte) base.fonte = q.fonte
         if (q.comentario) base.comentario = q.comentario
         if (q.tipo === 'certo_errado') {
           base.gabarito = !!q.gabarito
@@ -92,7 +77,6 @@ export default function CriarProva({ onAdicionar, onVoltar }) {
   }
 
   const avisos = validarProva(montarProva())
-  const pendentes = questoes.filter((q) => q.precisaImagem && !q.imagem).length
 
   const adicionar = () => {
     try { onAdicionar(montarProva()); setMsg('prova adicionada às suas provas!') }
@@ -119,12 +103,6 @@ export default function CriarProva({ onAdicionar, onVoltar }) {
           </button>
         </div>
       </div>
-
-      {pendentes > 0 && (
-        <div className="flex items-center gap-2 text-sm rounded-lg bg-amber-50 text-amber-700 px-3 py-2">
-          <Warning size={16} weight="fill" /> {pendentes} questão(ões) ainda precisam de imagem (marcadas em amarelo).
-        </div>
-      )}
 
       {previa ? (
         <Previa prova={montarProva()} />
@@ -223,30 +201,12 @@ function ModalFormato({ onFechar }) {
 }
 
 function EditorQuestao({ q, numero, onChange, onRemover }) {
-  const imgRef = useRef(null)
-  const falta = q.precisaImagem && !q.imagem
-
-  const anexar = async (e) => {
-    const file = e.target.files?.[0]
-    e.target.value = ''
-    if (file) { try { onChange({ imagem: await arquivoParaDataURI(file) }) } catch { /* ignore */ } }
-  }
-
-  // Ctrl+V: pega a imagem do clipboard (print, cópia) e embute na questão.
-  const colar = async (e) => {
-    const item = [...(e.clipboardData?.items || [])].find((it) => it.type.startsWith('image/'))
-    if (!item) return
-    e.preventDefault()
-    const file = item.getAsFile()
-    if (file) { try { onChange({ imagem: await arquivoParaDataURI(file) }) } catch { /* ignore */ } }
-  }
 
   return (
-    <section className={`rounded-xl bg-cartao border p-4 flex flex-col gap-3 ${falta ? 'border-amber-400' : 'border-linha'}`}>
+    <section className='rounded-xl bg-cartao border p-4 flex flex-col gap-3 border-linha'>
       <div className="flex items-center justify-between">
         <span className="text-sm font-bold text-muted flex items-center gap-2">
           questão {numero}
-          {falta && <span className="text-amber-600 text-xs font-semibold flex items-center gap-1"><ImageSquare size={12} /> falta imagem</span>}
         </span>
         <div className="flex items-center gap-2">
           <div className="flex rounded-lg border border-linha overflow-hidden text-sm">
@@ -262,30 +222,6 @@ function EditorQuestao({ q, numero, onChange, onRemover }) {
 
       <input value={q.materia} onChange={(e) => onChange({ materia: e.target.value })} placeholder="matéria (ex.: Português)" className="px-3 py-2 rounded-lg border border-linha text-sm" />
       <textarea value={q.enunciado} onChange={(e) => onChange({ enunciado: e.target.value })} placeholder="enunciado da questão" rows={2} className="px-3 py-2 rounded-lg border border-linha" />
-
-      {/* área de imagem: clique+cole (Ctrl+V) ou escolher arquivo */}
-      <div
-        tabIndex={0}
-        onPaste={colar}
-        className={`rounded-lg border-2 border-dashed p-3 outline-none focus:border-primaria focus:bg-primaria-clara transition ${falta ? 'border-amber-400 bg-amber-50' : 'border-linha'}`}
-      >
-        {q.imagem ? (
-          <div className="flex items-center gap-3">
-            <img src={q.imagem} alt="prévia" className="h-16 rounded border border-linha bg-white" />
-            <button onClick={() => onChange({ imagem: '' })} className="text-sm text-muted hover:text-erro">remover</button>
-          </div>
-        ) : (
-          <div className="text-sm text-muted flex flex-wrap items-center gap-1.5">
-            <ImageSquare size={16} />
-            <span>clique aqui e <b>cole (Ctrl+V)</b>, ou</span>
-            <button onClick={() => imgRef.current?.click()} className="text-primaria font-semibold">escolher arquivo</button>
-          </div>
-        )}
-      </div>
-      <input ref={imgRef} type="file" accept="image/*" onChange={anexar} className="hidden" />
-      {q.imagem && (
-        <input value={q.fonte} onChange={(e) => onChange({ fonte: e.target.value })} placeholder="fonte/legenda da imagem (opcional)" className="px-3 py-2 rounded-lg border border-linha text-sm" />
-      )}
 
       {q.tipo === 'certo_errado' ? (
         <div className="flex gap-2">

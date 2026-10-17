@@ -35,7 +35,6 @@ export default function Resultado({ resultado, subtitulo, onVoltar, onRefazerErr
   const formatarQuestao = (resultadoQuestao, indice) => {
     const { questao, resposta } = resultadoQuestao
     const linhas = [`${indice + 1}. [${questao.materia} · ${questao.banca} - ${questao.ano || ''}]`]
-    if (questao.textoApoio) linhas.push(`Texto de apoio: ${questao.textoApoio}`)
     linhas.push(questao.enunciado)
     ;(questao.alternativas || []).forEach((alternativa, posicao) => linhas.push(`${String.fromCharCode(65 + posicao)}) ${alternativa}`))
     linhas.push(`Resposta marcada: ${descreverAlternativa(questao, resposta)}`)

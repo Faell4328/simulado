@@ -9,12 +9,10 @@
     {
       "materia": "Matemática",
       "tipo": "multipla",
-      "imagem": "data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='260' height='200'><polygon points='30,170 230,170 30,30' fill='none' stroke='black' stroke-width='3'/><text x='120' y='190' font-size='16'>4</text><text x='6' y='105' font-size='16'>3</text><text x='140' y='95' font-size='16'>?</text></svg>",
-      "fonte": "Figura ilustrativa (não está em escala).",
-      "enunciado": "No triângulo retângulo da figura, os catetos medem 3 e 4. Qual é a medida da hipotenusa?",
+      "enunciado": "![imagem](data:image/svg+xml;utf8,<svg%20xmlns='http://www.w3.org/2000/svg'%20width='260'%20height='200'><polygon%20points='30,170%20230,170%2030,30'%20fill='none'%20stroke='black'%20stroke-width='3'/><text%20x='120'%20y='190'%20font-size='16'>4</text><text%20x='6'%20y='105'%20font-size='16'>3</text><text%20x='140'%20y='95'%20font-size='16'>?</text></svg>)\n\nNo triângulo retângulo da figura, os catetos medem 3 e 4. Qual é a medida da hipotenusa?",
       "alternativas": ["5", "6", "7", "12", "25"],
       "gabarito": 0,
-      "comentario": "Teorema de Pitágoras: h² = 3² + 4² = 9 + 16 = 25, logo h = 5."
+      "comentario": "Teorema de Pitágoras: $h^{2} = 3^{2} + 4^{2}$ = 9 + 16 = 25, logo h = 5."
     },
     {
       "materia": "Geografia",
