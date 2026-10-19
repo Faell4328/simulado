@@ -22,7 +22,7 @@ Nada sai da sua máquina. As provas que você sobe e os resultados ficam no seu 
 - criação de prova pelo próprio app
 - upload de um `.json` ou de uma pasta inteira de provas
 - questões de múltipla escolha e de certo/errado
-- texto de apoio e imagens embutidas nas questões
+- imagens, tabelas e fórmulas (Markdown/HTML/LaTeX) nas questões
 
 O formato das provas está documentado em [FORMATO.md](FORMATO.md). O [PROMPT-PROVA.md](PROMPT-PROVA.md) é o mesmo formato embalado como prompt, para pedir provas novas a uma IA.
 

@@ -2,6 +2,9 @@ import { Check, X } from '@phosphor-icons/react'
 import ReactMarkdown, { defaultUrlTransform } from 'react-markdown'
 import remarkMath from 'remark-math'
 import rehypeMathjax from 'rehype-mathjax'
+import remarkGfm from 'remark-gfm'
+import rehypeRaw from 'rehype-raw'
+import remarkBreaks from 'remark-breaks'
 
 // O defaultUrlTransform bloqueia o esquema `data:` (usado para imagens inline
 // em SVG/base64). Libera apenas data:image; o resto continua sanitizado.
@@ -22,8 +25,8 @@ export default function Questao({ questao, numero, resposta, onResponder, riscad
 
         <div className="prose dark:prose-invert max-w-none">
           <ReactMarkdown
-            remarkPlugins={[remarkMath]}
-            rehypePlugins={[rehypeMathjax]}
+            remarkPlugins={[remarkMath, remarkGfm, remarkBreaks]}
+            rehypePlugins={[rehypeRaw, rehypeMathjax]}
             urlTransform={urlTransform}
             children={questao.enunciado}
           />
@@ -66,8 +69,9 @@ export default function Questao({ questao, numero, resposta, onResponder, riscad
       {revelar && questao.comentario && (
         <div className="prose prose-sm dark:prose-invert max-w-none rounded-lg bg-primaria-clara text-tinta text-sm p-3">
           <ReactMarkdown
-            remarkPlugins={[remarkMath]}
-            rehypePlugins={[rehypeMathjax]}
+            remarkPlugins={[remarkMath, remarkGfm, remarkBreaks]}
+            rehypePlugins={[rehypeRaw, rehypeMathjax]}
+            urlTransform={urlTransform}
             children={"**Comentário**: "+questao.comentario}
           />
         </div>
@@ -104,8 +108,9 @@ function Alternativa({ letra, texto, rotulo, escolhida, riscada, estado, onClick
           </span>
         )}
         <ReactMarkdown
-          remarkPlugins={[remarkMath]}
-          rehypePlugins={[rehypeMathjax]}
+          remarkPlugins={[remarkMath, remarkGfm, remarkBreaks]}
+          rehypePlugins={[rehypeRaw, rehypeMathjax]}
+          urlTransform={urlTransform}
           children={texto || rotulo}
         />
         {estado === 'certo' && <Check size={18} weight="bold" />}

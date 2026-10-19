@@ -3,7 +3,7 @@
 > Quer que uma IA monte a prova pra você? Use o [PROMPT-PROVA.md](./PROMPT-PROVA.md) — é este mesmo formato embalado como prompt. No app ele está em **Criar prova → "formato / prompt p/ IA"** (com botões de copiar e baixar).
 
 > [!WARNING]
-> Atualmente as imagens são suportadas apenas como **URL remota** ou como **base64 embutido** (`data:image/...`), este último escrito manualmente ou por uma IA que execute código.
+> Não existe campo de imagem: as figuras são embutidas no próprio Markdown do `enunciado`/`comentario`, como **URL remota** ou **base64** (`data:image/...`), este último escrito manualmente ou por uma IA que execute código.
 
 Cada **prova** é um arquivo JSON autocontido em `src/data/provas/`. Para adicionar uma prova, **basta soltar um `.json` novo nessa pasta** — o app carrega automaticamente (via `import.meta.glob`), sem precisar mexer em código nem manter lista/manifesto. As questões vão **inline** dentro da prova.
 
@@ -36,15 +36,18 @@ O nome do arquivo vira o `id` da prova se você não informar um `"id"`.
 }
 ```
 
-## Imagem, texto de apoio e fórmulas (ENEM etc.)
+## Imagens, tabelas e fórmulas (ENEM etc.)
 
-O `enunciado`, as `alternativas` e o `comentario` aceitam **Markdown** e **LaTeX**:
+O `enunciado`, as `alternativas` e o `comentario` aceitam **Markdown**, **HTML** e **LaTeX**:
 
 - **Imagem:** `![descrição](URL ou data URI)` — ex.: `![charge](https://.../charge.png)`
-- **Texto de apoio:** escreva direto no `enunciado`, separado do restante por uma linha em branco (`\n\n`).
+- **Texto de apoio:** inclua no próprio `enunciado`, separado do restante por uma linha em branco (`\n\n`).
 - **Fórmula inline:** `$a^2 + b^2 = c^2$`
 - **Fórmula em bloco:** `$$x = \frac{-b \pm \sqrt{\Delta}}{2a}$$`
 - **Ênfase/listas/citações:** sintaxe Markdown normal (`**forte**`, `*itálico*`, `- item`, `> citação`).
+- **Tabelas:** tabelas GFM; para quebrar linha dentro de uma célula use `<br>`.
+- **Quebra de linha:** no JSON, use `\n`; fora de tabelas ele vira uma quebra de linha na exibição.
+- **HTML simples:** permitido (ex.: `<sub>`, `<sup>`, `<br>`).
 
 ```json
 {

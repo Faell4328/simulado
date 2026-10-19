@@ -16,7 +16,7 @@ do app "simulado". Siga as regras à risca.
 - Responda **apenas com o JSON**, sem texto antes ou depois, sem ``` e sem comentários.
 - JSON válido, UTF-8, em português do Brasil, com os acentos corretos.
 - Se a prova tiver muitas questões, inclua **todas** as que eu enviei.
-- As questões e alternativas suportam **Markdown** e **LaTeX** (renderizados com `react-markdown`, `remark-math` e `rehype-mathjax`).
+- As questões e alternativas suportam **Markdown**, **HTML** e **LaTeX** (renderizados com `react-markdown`, `remark-math`, `remark-gfm`, `remark-breaks`, `rehype-mathjax` e `rehype-raw`).
 
 ### Estrutura do arquivo
 
@@ -87,8 +87,11 @@ do app "simulado". Siga as regras à risca.
 2. Transcreva o enunciado **fiel ao original** (não resuma nem reescreva).
 3. Se a questão foi **anulada** na prova original, pule ela.
 4. **Não coloque `id` nas questões**: o app gera sozinho (`<idProva>-1`, `-2`, ...). O `id` só existe no nível da prova, e mesmo lá é opcional.
-5. Se uma imagem vier como URL "solta", converta para a sintaxe Markdown (`![descrição](URL)`) para que ela seja exibida — vale tanto para URL local quanto da internet.
+5. Não existe campo de imagem: se uma imagem vier como URL "solta", converta para a sintaxe Markdown (`![descrição](URL)`) dentro do `enunciado` — vale tanto para URL local quanto da internet.
 6. Preserve a formatação LaTeX, incluindo os delimitadores `$...$` e `$$...$$`, e o Markdown.
+7. Mantenha a quebra de linha nos textos, tabelas e etc. Dentro da tabela do markdown, use `<br>` para separar os elementos na mesma célula. Já fora da tabela, use quebra de linha real (no JSON, representada por `\n`).
+8. Caso a prova coloque um texto ou uma imagem usada em várias perguntas, ela deve ser repetida individualmente para cada questão.
+9. Não altere nada que não foi solicitado diretamente, por exemplo: nunca remova o "\displaystyle".
 
 ### Exemplo completo e válido
 
