@@ -1,3 +1,4 @@
+import { useEffect, useRef } from 'react'
 import { Check, X } from '@phosphor-icons/react'
 import ReactMarkdown, { defaultUrlTransform } from 'react-markdown'
 import remarkMath from 'remark-math'
@@ -5,14 +6,72 @@ import rehypeMathjax from 'rehype-mathjax'
 import remarkGfm from 'remark-gfm'
 import rehypeRaw from 'rehype-raw'
 import remarkBreaks from 'remark-breaks'
+import { aplicarDestaques, limparMarcas, offsetsDaSelecao } from '../lib/marcaTexto.js'
 
 // O defaultUrlTransform bloqueia o esquema `data:` (usado para imagens inline
 // em SVG/base64). Libera apenas data:image; o resto continua sanitizado.
 const urlTransform = (url) => (url.startsWith('data:image/') ? url : defaultUrlTransform(url))
 
+const SEM_DESTAQUES = []
+
 // Renderiza uma questão. revelar=true mostra o gabarito (colore certo/errado) e
 // bloqueia a interação — usado no modo estudo (após responder) e na correção.
-export default function Questao({ questao, numero, resposta, onResponder, riscadas = {}, onRiscar, revelar }) {
+export default function Questao({
+  questao, numero, resposta, onResponder, riscadas = {}, onRiscar, revelar,
+  destaques = SEM_DESTAQUES, modoMarcacao = false, modoApagar = false, onMarcarSelecao, onRemoverDestaque,
+}) {
+  const areaEnunciado = useRef(null)
+  const temporizadorSelecao = useRef(null)
+
+  const marcarSelecao = () => {
+    if (!modoMarcacao || !onMarcarSelecao) return
+    const raiz = areaEnunciado.current
+    const selecao = window.getSelection()
+    if (!raiz || !selecao || selecao.rangeCount === 0 || selecao.isCollapsed) return
+    const range = selecao.getRangeAt(0)
+    if (!raiz.contains(range.commonAncestorContainer)) return
+    const intervalo = offsetsDaSelecao(raiz, range)
+    if (!intervalo) return
+    onMarcarSelecao(intervalo)
+    selecao.removeAllRanges()
+  }
+  const marcarRef = useRef(marcarSelecao)
+  useEffect(() => { marcarRef.current = marcarSelecao })
+
+  useEffect(() => {
+    const raiz = areaEnunciado.current
+    if (!raiz) return
+    limparMarcas(raiz)
+    aplicarDestaques(raiz, destaques)
+  }, [destaques, questao.enunciado])
+
+  useEffect(() => {
+    if (!modoMarcacao) return
+    marcarRef.current()
+    const aoMudarSelecao = () => {
+      clearTimeout(temporizadorSelecao.current)
+      temporizadorSelecao.current = setTimeout(() => marcarRef.current(), 350)
+    }
+    document.addEventListener('selectionchange', aoMudarSelecao)
+    return () => {
+      clearTimeout(temporizadorSelecao.current)
+      document.removeEventListener('selectionchange', aoMudarSelecao)
+    }
+  }, [modoMarcacao])
+
+  const aoSoltarMouse = (e) => {
+    if (e.button !== 0) return
+    marcarSelecao()
+  }
+  const aoClicar = (e) => {
+    if (!modoApagar || !onRemoverDestaque) return
+    const marca = e.target.closest?.('mark[data-marca-texto]')
+    if (!marca) return
+    const selecao = window.getSelection()
+    if (selecao && !selecao.isCollapsed) return
+    onRemoverDestaque(marca.dataset.marcaTexto)
+  }
+
   return (
     <div className="flex flex-col gap-4">
       <div>
@@ -23,7 +82,12 @@ export default function Questao({ questao, numero, resposta, onResponder, riscad
           <span>· {questao.banca}{questao.ano ? ` ${questao.ano}` : ''}</span>
         </div>
 
-        <div className="prose dark:prose-invert max-w-none">
+        <div
+          ref={areaEnunciado}
+          className={`prose dark:prose-invert max-w-none${modoMarcacao ? ' marca-texto-ativo' : ''}${modoApagar ? ' marca-texto-apagar' : ''}`}
+          onMouseUp={aoSoltarMouse}
+          onClick={aoClicar}
+        >
           <ReactMarkdown
             remarkPlugins={[remarkMath, remarkGfm, remarkBreaks]}
             rehypePlugins={[rehypeRaw, rehypeMathjax]}

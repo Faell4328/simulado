@@ -55,6 +55,24 @@ mjx-container[jax='SVG'] > svg { display: inline-block; }
 .prose img[src^='data:image/svg+xml'] { filter: brightness(0); }
 .dark .prose img[src^='data:image/svg+xml'] { filter: brightness(0) invert(1); }
 
+.prose mark[data-marca-texto] {
+  background-color: rgb(253 224 71 / 0.6);
+  color: inherit;
+  padding: 0;
+  border-radius: 2px;
+  cursor: text;
+  box-decoration-break: clone;
+  -webkit-box-decoration-break: clone;
+}
+.dark .prose mark[data-marca-texto] {
+  background-color: rgb(250 204 21 / 0.3);
+  color: rgb(var(--c-tinta));
+}
+.marca-texto-ativo { cursor: text; }
+.marca-texto-ativo ::selection { background-color: rgb(253 224 71 / 0.5); }
+.marca-texto-apagar mark[data-marca-texto] { cursor: pointer; }
+.marca-texto-apagar mark[data-marca-texto]:hover { background-color: rgb(248 113 113 / 0.45); }
+
 /* Campos de formulário seguem o tema. Sem isto caem no default do navegador:
    caixa branca no escuro ou texto de baixo contraste. (checkbox/radio/range/file
    ficam com a aparência nativa, controlada pelo color-scheme.) */

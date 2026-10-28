@@ -3,7 +3,10 @@ import BarraTopo from './BarraTopo.jsx'
 import Questao from './Questao.jsx'
 import FolhaRespostas from './FolhaRespostas.jsx'
 import { formatarTempo } from '../lib/tempo.js'
-import { CaretLeft, CaretRight, CheckCircle, Flag, Keyboard, X } from '@phosphor-icons/react'
+import { adicionarDestaque, removerDestaque } from '../lib/marcaTexto.js'
+import { CaretLeft, CaretRight, CheckCircle, Eraser, Flag, Highlighter, Keyboard, Trash, X } from '@phosphor-icons/react'
+
+const SEM_DESTAQUES = []
 
 // Tela de resolução: questão, navegação, folha, timer, marcar e atalhos.
 // modo 'estudo' revela o gabarito assim que responde; 'prova' corrige no fim.
@@ -13,6 +16,8 @@ export default function Resolvendo({ questoes, respostas, onResponder, duracaoSe
   const [riscadas, setRiscadas] = useState(inicial?.riscadas ?? {})
   const [marcadas, setMarcadas] = useState(new Set(inicial?.marcadas ?? []))
   const [reveladas, setReveladas] = useState(new Set(inicial?.reveladas ?? []))
+  const [destaques, setDestaques] = useState(inicial?.destaques ?? {})
+  const [ferramenta, setFerramenta] = useState(null)
   const [segundos, setSegundos] = useState(inicial?.segundos ?? (duracaoSeg ?? 0))
   const [ajuda, setAjuda] = useState(false)
   const timer = useRef(null)
@@ -49,6 +54,10 @@ export default function Resolvendo({ questoes, respostas, onResponder, duracaoSe
 
   const q = questoes[indice]
   const revelarAtual = modo === 'estudo' && reveladas.has(q.id)
+  const destaquesQuestao = destaques[q.id] || SEM_DESTAQUES
+  const grifando = ferramenta === 'grifar'
+  const apagando = ferramenta === 'apagar'
+  const alternarFerramenta = (f) => setFerramenta((atual) => (atual === f ? null : f))
 
   const responder = (id, valor) => {
     if (modo === 'estudo' && reveladas.has(id)) return
@@ -61,8 +70,20 @@ export default function Resolvendo({ questoes, respostas, onResponder, duracaoSe
   const marcar = () => setMarcadas((s) => {
     const n = new Set(s); n.has(q.id) ? n.delete(q.id) : n.add(q.id); return n
   })
+  const marcarSelecao = ({ inicio, fim }) => setDestaques((d) => ({
+    ...d,
+    [q.id]: adicionarDestaque(d[q.id] || [], inicio, fim),
+  }))
+  const removerGrifo = (id) => setDestaques((d) => ({
+    ...d,
+    [q.id]: removerDestaque(d[q.id] || [], id),
+  }))
+  const removerTodosGrifos = () => {
+    if (!window.confirm('Remover todos os grifos desta questão?')) return
+    setDestaques((d) => ({ ...d, [q.id]: [] }))
+  }
   const ir = (delta) => setIndice((i) => Math.max(0, Math.min(questoes.length - 1, i + delta)))
-  const estadoAtual = (seg = segundos) => ({ indice, segundos: seg, marcadas: [...marcadas], reveladas: [...reveladas], riscadas })
+  const estadoAtual = (seg = segundos) => ({ indice, segundos: seg, marcadas: [...marcadas], reveladas: [...reveladas], riscadas, destaques })
   const pausar = () => onPausar(estadoAtual())
 
   // Auto-salva o progresso a cada resposta/navegação/marcação (não a cada
@@ -71,7 +92,11 @@ export default function Resolvendo({ questoes, respostas, onResponder, duracaoSe
     if (!onAutosave) return
     onAutosave(estadoAtual(segundosRef.current))
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [indice, respostas, marcadas, reveladas, riscadas])
+  }, [indice, respostas, marcadas, reveladas, riscadas, destaques])
+
+  useEffect(() => {
+    if (apagando && destaquesQuestao.length === 0) setFerramenta(null)
+  }, [apagando, destaquesQuestao.length])
 
   // Avisa antes de fechar/recarregar a aba durante a prova (evita perder tudo).
   useEffect(() => {
@@ -118,8 +143,46 @@ export default function Resolvendo({ questoes, respostas, onResponder, duracaoSe
         onSair={pausar}
       />
 
-      <main key={indice} className="mx-auto max-w-2xl px-4 py-6 flex flex-col gap-5 animar-entrada">
-        <div className="flex items-center justify-between">
+      <div className="fixed left-2 top-1/2 z-10 -translate-y-1/2 flex flex-col gap-1 rounded-2xl border border-linha bg-cartao p-1.5 shadow-lg animar-pop">
+        <button
+          onClick={() => alternarFerramenta('grifar')}
+          onMouseDown={(e) => e.preventDefault()}
+          aria-pressed={grifando}
+          aria-label="marca texto"
+          title="marca texto: ative e selecione o texto que quer grifar"
+          className={`grid place-items-center w-9 h-9 rounded-xl transition ${
+            grifando ? 'bg-amber-100 text-amber-700' : 'text-muted hover:bg-primaria-clara hover:text-primaria'
+          }`}
+        >
+          <Highlighter size={18} weight={grifando ? 'fill' : 'regular'} />
+        </button>
+        <div className="h-px w-6 mx-auto bg-linha" />
+        <button
+          onClick={() => alternarFerramenta('apagar')}
+          disabled={destaquesQuestao.length === 0}
+          aria-pressed={apagando}
+          aria-label="remover grifo"
+          title="remover grifo: ative e clique no grifo que quer remover"
+          className={`grid place-items-center w-9 h-9 rounded-xl transition disabled:opacity-30 disabled:pointer-events-none ${
+            apagando ? 'bg-red-50 text-erro' : 'text-muted hover:bg-red-50 hover:text-erro'
+          }`}
+        >
+          <Eraser size={18} />
+        </button>
+        <div className="h-px w-6 mx-auto bg-linha" />
+        <button
+          onClick={removerTodosGrifos}
+          disabled={destaquesQuestao.length === 0}
+          aria-label="remover tudo"
+          title="remover todos os grifos desta questão"
+          className="grid place-items-center w-9 h-9 rounded-xl text-muted transition hover:bg-red-50 hover:text-erro disabled:opacity-30 disabled:pointer-events-none"
+        >
+          <Trash size={18} />
+        </button>
+      </div>
+
+      <main key={indice} className="mx-auto max-w-2xl pl-16 pr-4 py-6 md:px-4 flex flex-col gap-5 animar-entrada">
+        <div className="flex flex-wrap items-center justify-between gap-2">
           <span className="text-sm text-muted">{respondidas}/{questoes.length} respondidas{modo === 'estudo' ? ' · modo estudo' : ''}</span>
           <button
             onClick={marcar}
@@ -139,6 +202,11 @@ export default function Resolvendo({ questoes, respostas, onResponder, duracaoSe
           riscadas={riscadas[q.id] || {}}
           onRiscar={riscar}
           revelar={revelarAtual}
+          destaques={destaquesQuestao}
+          modoMarcacao={grifando}
+          modoApagar={apagando}
+          onMarcarSelecao={marcarSelecao}
+          onRemoverDestaque={removerGrifo}
         />
 
         <div className="flex items-center justify-between">

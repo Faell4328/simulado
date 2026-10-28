@@ -79,7 +79,7 @@ export default function App() {
     if (!p) return
     setSessao(p.sessao)
     setRespostas(p.respostas || {})
-    setInicialResolvendo({ indice: p.indice, segundos: p.segundos, marcadas: p.marcadas, reveladas: p.reveladas, riscadas: p.riscadas })
+    setInicialResolvendo({ indice: p.indice, segundos: p.segundos, marcadas: p.marcadas, reveladas: p.reveladas, riscadas: p.riscadas, destaques: p.destaques })
     setTela('resolvendo')
   }
 
