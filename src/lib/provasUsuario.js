@@ -2,78 +2,78 @@
 // login, sem servidor) e aparecem na lista junto com as embutidas.
 import { normalizarProva, validarProva } from '../data/conteudo.js'
 
-const CHAVE = 'simulado_provas_usuario'
+const CHAVE_ARMAZENAMENTO = 'simulado_provas_usuario'
 
 export function getProvasUsuario() {
   try {
-    const cru = JSON.parse(localStorage.getItem(CHAVE) || '[]')
-    return cru.map((p) => normalizarProva(p, '', 'usuario'))
+    const provasSalvas = JSON.parse(localStorage.getItem(CHAVE_ARMAZENAMENTO) || '[]')
+    return provasSalvas.map((prova) => normalizarProva(prova, '', 'usuario'))
   } catch {
     return []
   }
 }
 
-function salvarCru(lista) {
+function salvarProvas(provas) {
   try {
-    localStorage.setItem(CHAVE, JSON.stringify(lista))
+    localStorage.setItem(CHAVE_ARMAZENAMENTO, JSON.stringify(provas))
   } catch {
     // Cota do navegador estourada (~5MB) — provavelmente imagens grandes.
     throw new Error('não coube no navegador (armazenamento cheio). Remova provas antigas ou use imagens menores.')
   }
 }
 
-function lerCru() {
-  try { return JSON.parse(localStorage.getItem(CHAVE) || '[]') } catch { return [] }
+function lerProvasSalvas() {
+  try { return JSON.parse(localStorage.getItem(CHAVE_ARMAZENAMENTO) || '[]') } catch { return [] }
 }
 
-// Adiciona (ou substitui, se o id já existir) uma prova crua já validada.
-// Retorna { norm, substituiu } pra avisar quando troca uma prova de mesmo id.
+// Adiciona (ou substitui, se o id já existir) uma prova já validada.
+// Retorna { provaNormalizada, substituiu } pra avisar quando troca uma prova de mesmo id.
 export function adicionarProvaUsuario(provaCrua) {
-  const norm = normalizarProva(provaCrua, '', 'usuario')
-  const antes = lerCru()
-  const substituiu = antes.some((p) => (p.id || '') === norm.id)
-  const lista = antes.filter((p) => (p.id || '') !== norm.id)
-  lista.push({ ...provaCrua, id: norm.id })
-  salvarCru(lista)
-  return { norm, substituiu }
+  const provaNormalizada = normalizarProva(provaCrua, '', 'usuario')
+  const provasAtuais = lerProvasSalvas()
+  const substituiu = provasAtuais.some((prova) => (prova.id || '') === provaNormalizada.id)
+  const provasRestantes = provasAtuais.filter((prova) => (prova.id || '') !== provaNormalizada.id)
+  provasRestantes.push({ ...provaCrua, id: provaNormalizada.id })
+  salvarProvas(provasRestantes)
+  return { provaNormalizada, substituiu }
 }
 
 export function removerProvaUsuario(id) {
-  salvarCru(lerCru().filter((p) => (p.id || '') !== id))
+  salvarProvas(lerProvasSalvas().filter((prova) => (prova.id || '') !== id))
 }
 
 // Lê um arquivo (File) escolhido pelo usuário e devolve { prova, avisos } ou
 // lança erro se o JSON for inválido.
-export function lerArquivoProva(file) {
+export function lerArquivoProva(arquivo) {
   return new Promise((resolve, reject) => {
-    const reader = new FileReader()
-    reader.onload = () => {
+    const leitor = new FileReader()
+    leitor.onload = () => {
       try {
-        const prova = JSON.parse(reader.result)
+        const prova = JSON.parse(leitor.result)
         resolve({ prova, avisos: validarProva(prova) })
       } catch {
         reject(new Error('arquivo não é um JSON válido'))
       }
     }
-    reader.onerror = () => reject(new Error('não deu pra ler o arquivo'))
-    reader.readAsText(file)
+    leitor.onerror = () => reject(new Error('não deu pra ler o arquivo'))
+    leitor.readAsText(arquivo)
   })
 }
 
 // Lê uma pasta inteira (FileList do input com webkitdirectory): pega todos os
 // .json e adiciona os válidos. Retorna { adicionadas, erros: [{nome, erro}] }.
-export async function subirPastaProvas(fileList) {
-  const files = Array.from(fileList).filter((f) => f.name.toLowerCase().endsWith('.json'))
-  let adicionadas = 0
+export async function subirPastaProvas(listaArquivos) {
+  const arquivosJson = Array.from(listaArquivos).filter((arquivo) => arquivo.name.toLowerCase().endsWith('.json'))
+  let quantidadeAdicionadas = 0
   const erros = []
-  for (const f of files) {
+  for (const arquivo of arquivosJson) {
     try {
-      const { prova } = await lerArquivoProva(f)
+      const { prova } = await lerArquivoProva(arquivo)
       adicionarProvaUsuario(prova)
-      adicionadas++
-    } catch (e) {
-      erros.push({ nome: f.name, erro: e.message })
+      quantidadeAdicionadas++
+    } catch (erro) {
+      erros.push({ nome: arquivo.name, erro: erro.message })
     }
   }
-  return { adicionadas, erros, total: files.length }
+  return { adicionadas: quantidadeAdicionadas, erros, total: arquivosJson.length }
 }

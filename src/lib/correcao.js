@@ -12,28 +12,28 @@ export function corrigir(questoes, respostas, { pontuacao = 'bruto' } = {}) {
   let acertos = 0
   let erros = 0
   const porMateria = {}
-  const detalhe = questoes.map((q) => {
-    const dada = respostas[q.id]
-    const respondida = dada !== undefined && dada !== null
-    const certa = respostaCerta(q, dada)
-    const errada = respondida && !certa
-    if (certa) acertos++
-    if (errada) erros++
-    const m = (porMateria[q.materia] ||= { total: 0, acertos: 0, erros: 0 })
-    m.total++
-    if (certa) m.acertos++
-    if (errada) m.erros++
-    return { questao: q, resposta: dada, certa }
+  const detalhe = questoes.map((questao) => {
+    const respostaDada = respostas[questao.id]
+    const foiRespondida = respostaDada !== undefined && respostaDada !== null
+    const estaCorreta = respostaCerta(questao, respostaDada)
+    const estaErrada = foiRespondida && !estaCorreta
+    if (estaCorreta) acertos++
+    if (estaErrada) erros++
+    const estatisticaMateria = (porMateria[questao.materia] ||= { total: 0, acertos: 0, erros: 0 })
+    estatisticaMateria.total++
+    if (estaCorreta) estatisticaMateria.acertos++
+    if (estaErrada) estatisticaMateria.erros++
+    return { questao, resposta: respostaDada, certa: estaCorreta }
   })
-  const total = questoes.length
-  const liquido = pontuacao === 'cebraspe' ? Math.max(0, acertos - erros) : acertos
+  const totalQuestoes = questoes.length
+  const pontuacaoLiquida = pontuacao === 'cebraspe' ? Math.max(0, acertos - erros) : acertos
   return {
     acertos,
     erros,
-    liquido,
+    liquido: pontuacaoLiquida,
     pontuacao,
-    total,
-    percentual: total ? Math.round((liquido / total) * 100) : 0,
+    total: totalQuestoes,
+    percentual: totalQuestoes ? Math.round((pontuacaoLiquida / totalQuestoes) * 100) : 0,
     porMateria,
     detalhe,
   }

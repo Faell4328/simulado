@@ -5,35 +5,35 @@ import { ArrowLeft, DownloadSimple, UploadSimple, Trash } from '@phosphor-icons/
 // Histórico: melhor nota e nº de tentativas por prova, com exportar/importar o
 // arquivo de save (.json) pra levar entre computadores.
 export default function Historico({ onVoltar }) {
-  const [resumo, setResumo] = useState(resumoPorProva())
-  const [msg, setMsg] = useState(null)
-  const inputRef = useRef(null)
+  const [resumos, setResumos] = useState(resumoPorProva())
+  const [mensagem, setMensagem] = useState(null)
+  const inputArquivoRef = useRef(null)
 
-  const exportar = () => {
+  const exportarHistorico = () => {
     const blob = new Blob([exportarSave()], { type: 'application/json' })
-    const a = document.createElement('a')
-    a.href = URL.createObjectURL(blob)
-    a.download = 'simulado-save.json'
-    a.click()
-    URL.revokeObjectURL(a.href)
+    const link = document.createElement('a')
+    link.href = URL.createObjectURL(blob)
+    link.download = 'simulado-save.json'
+    link.click()
+    URL.revokeObjectURL(link.href)
   }
 
-  const importar = (e) => {
-    const file = e.target.files?.[0]
-    e.target.value = ''
-    if (!file) return
-    const reader = new FileReader()
-    reader.onload = () => {
+  const importarHistorico = (evento) => {
+    const arquivo = evento.target.files?.[0]
+    evento.target.value = ''
+    if (!arquivo) return
+    const leitor = new FileReader()
+    leitor.onload = () => {
       try {
-        const n = importarSave(reader.result)
-        setResumo(resumoPorProva())
-        setMsg(`${n} resultado(s) importado(s).`)
-      } catch { setMsg('save inválido.') }
+        const quantidadeImportada = importarSave(leitor.result)
+        setResumos(resumoPorProva())
+        setMensagem(`${quantidadeImportada} resultado(s) importado(s).`)
+      } catch { setMensagem('save inválido.') }
     }
-    reader.readAsText(file)
+    leitor.readAsText(arquivo)
   }
 
-  const limpar = () => { limparHistorico(); setResumo([]) }
+  const limparTodoHistorico = () => { limparHistorico(); setResumos([]) }
 
   return (
     <main className="mx-auto max-w-2xl px-4 py-6 flex flex-col gap-4 animar-entrada">
@@ -43,35 +43,35 @@ export default function Historico({ onVoltar }) {
         </button>
         <h1 className="text-lg font-bold">Histórico</h1>
         <div className="ml-auto flex items-center gap-2">
-          <button onClick={exportar} className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg border border-linha text-sm font-semibold hover:border-primaria transition">
+          <button onClick={exportarHistorico} className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg border border-linha text-sm font-semibold hover:border-primaria transition">
             <DownloadSimple size={16} /> exportar
           </button>
-          <button onClick={() => inputRef.current?.click()} className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg border border-linha text-sm font-semibold hover:border-primaria transition">
+          <button onClick={() => inputArquivoRef.current?.click()} className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg border border-linha text-sm font-semibold hover:border-primaria transition">
             <UploadSimple size={16} /> importar
           </button>
-          <input ref={inputRef} type="file" accept="application/json,.json" onChange={importar} className="hidden" />
+          <input ref={inputArquivoRef} type="file" accept="application/json,.json" onChange={importarHistorico} className="hidden" />
         </div>
       </div>
 
-      {msg && <div className="text-sm text-muted">{msg}</div>}
+      {mensagem && <div className="text-sm text-muted">{mensagem}</div>}
 
-      {resumo.length === 0 ? (
+      {resumos.length === 0 ? (
         <p className="text-muted text-center py-10">nenhum resultado ainda. faça uma prova!</p>
       ) : (
         <div className="flex flex-col gap-2">
-          {resumo.map((r) => (
-            <div key={r.provaId} className="rounded-xl bg-cartao border border-linha p-4 flex items-center gap-4">
+          {resumos.map((resumoProva) => (
+            <div key={resumoProva.provaId} className="rounded-xl bg-cartao border border-linha p-4 flex items-center gap-4">
               <div className="flex-1 min-w-0">
-                <div className="font-bold truncate">{r.titulo}</div>
-                <div className="text-sm text-muted">{r.tentativas} tentativa(s) · última {new Date(r.ultima).toLocaleDateString('pt-BR')}</div>
+                <div className="font-bold truncate">{resumoProva.titulo}</div>
+                <div className="text-sm text-muted">{resumoProva.tentativas} tentativa(s) · última {new Date(resumoProva.ultima).toLocaleDateString('pt-BR')}</div>
               </div>
               <div className="text-right shrink-0">
-                <div className="text-2xl font-black text-primaria tabular-nums">{r.melhor}%</div>
+                <div className="text-2xl font-black text-primaria tabular-nums">{resumoProva.melhor}%</div>
                 <div className="text-[11px] text-muted uppercase tracking-wider">melhor</div>
               </div>
             </div>
           ))}
-          <button onClick={limpar} className="self-center mt-2 flex items-center gap-1.5 text-sm text-erro hover:underline">
+          <button onClick={limparTodoHistorico} className="self-center mt-2 flex items-center gap-1.5 text-sm text-erro hover:underline">
             <Trash size={15} /> limpar histórico
           </button>
         </div>

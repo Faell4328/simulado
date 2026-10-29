@@ -4,15 +4,15 @@ import { ClipboardText, Stack, ChartBar, FolderOpen, Play, PencilSimple } from '
 // Tela inicial: provas, banco de perguntas, histórico, criar/upload e o aviso
 // de retomar uma prova pausada.
 export default function Inicio({ onProvas, onBanco, onHistorico, onCriar, onSubirPasta, progresso, onRetomar }) {
-  const pastaRef = useRef(null)
-  const [msg, setMsg] = useState(null)
+  const inputPastaRef = useRef(null)
+  const [mensagem, setMensagem] = useState(null)
 
-  const escolherPasta = async (e) => {
-    const files = e.target.files
-    e.target.value = ''
-    if (!files?.length) return
-    const r = await onSubirPasta(files)
-    setMsg(`${r.adicionadas} prova(s) carregada(s)${r.erros.length ? ` · ${r.erros.length} com erro` : ''}.`)
+  const escolherPasta = async (evento) => {
+    const arquivos = evento.target.files
+    evento.target.value = ''
+    if (!arquivos?.length) return
+    const resultadoUpload = await onSubirPasta(arquivos)
+    setMensagem(`${resultadoUpload.adicionadas} prova(s) carregada(s)${resultadoUpload.erros.length ? ` · ${resultadoUpload.erros.length} com erro` : ''}.`)
   }
 
   return (
@@ -34,9 +34,9 @@ export default function Inicio({ onProvas, onBanco, onHistorico, onCriar, onSubi
       )}
 
       <div className="grid sm:grid-cols-3 gap-4 w-full">
-        <Cartao Icone={ClipboardText} titulo="Provas" desc="Provas completas, no tempo oficial." onClick={onProvas} />
-        <Cartao Icone={Stack} titulo="Banco de perguntas" desc="Questões de todas as provas, filtre e treine." onClick={onBanco} />
-        <Cartao Icone={ChartBar} titulo="Histórico" desc="Seus resultados anteriores." onClick={onHistorico} />
+        <Cartao Icone={ClipboardText} titulo="Provas" descricao="Provas completas, no tempo oficial." onClick={onProvas} />
+        <Cartao Icone={Stack} titulo="Banco de perguntas" descricao="Questões de todas as provas, filtre e treine." onClick={onBanco} />
+        <Cartao Icone={ChartBar} titulo="Histórico" descricao="Seus resultados anteriores." onClick={onHistorico} />
       </div>
 
       <div className="flex flex-col items-center gap-2">
@@ -48,21 +48,21 @@ export default function Inicio({ onProvas, onBanco, onHistorico, onCriar, onSubi
             <PencilSimple size={18} weight="fill" /> criar prova
           </button>
           <button
-            onClick={() => pastaRef.current?.click()}
+            onClick={() => inputPastaRef.current?.click()}
             className="flex items-center gap-2 px-5 py-2 rounded-lg border border-linha font-semibold hover:border-primaria transition"
           >
             <FolderOpen size={18} weight="fill" /> carregar pasta
           </button>
         </div>
         {/* webkitdirectory: seletor de pasta no navegador */}
-        <input ref={pastaRef} type="file" webkitdirectory="" directory="" multiple onChange={escolherPasta} className="hidden" />
-        {msg && <span className="text-sm text-muted">{msg}</span>}
+        <input ref={inputPastaRef} type="file" webkitdirectory="" directory="" multiple onChange={escolherPasta} className="hidden" />
+        {mensagem && <span className="text-sm text-muted">{mensagem}</span>}
       </div>
     </main>
   )
 }
 
-function Cartao({ Icone, titulo, desc, onClick }) {
+function Cartao({ Icone, titulo, descricao, onClick }) {
   return (
     <button
       onClick={onClick}
@@ -72,7 +72,7 @@ function Cartao({ Icone, titulo, desc, onClick }) {
         <Icone size={24} weight="fill" />
       </span>
       <div className="text-base font-bold">{titulo}</div>
-      <div className="text-sm text-muted">{desc}</div>
+      <div className="text-sm text-muted">{descricao}</div>
     </button>
   )
 }

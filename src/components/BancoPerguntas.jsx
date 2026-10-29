@@ -6,23 +6,23 @@ import { ArrowLeft, Play } from '@phosphor-icons/react'
 // sorteia N e treina (modo estudo por padrão). Cada questão mantém a prova de
 // origem, mostrada durante a resolução.
 export default function BancoPerguntas({ questoes, onComecar, onVoltar }) {
-  const materias = ['todas', ...new Set(questoes.map((q) => q.materia))]
-  const bancas = ['todas', ...new Set(questoes.map((q) => q.banca))]
+  const materias = ['todas', ...new Set(questoes.map((questao) => questao.materia))]
+  const bancas = ['todas', ...new Set(questoes.map((questao) => questao.banca))]
   const [materia, setMateria] = useState('todas')
   const [banca, setBanca] = useState('todas')
   const [modo, setModo] = useState('estudo')
 
-  const filtradas = questoes.filter(
-    (q) => (materia === 'todas' || q.materia === materia) && (banca === 'todas' || q.banca === banca),
+  const questoesFiltradas = questoes.filter(
+    (questao) => (materia === 'todas' || questao.materia === materia) && (banca === 'todas' || questao.banca === banca),
   )
-  const max = filtradas.length
-  const [n, setN] = useState(10)
-  const nFinal = Math.min(n, max)
+  const quantidadeMaxima = questoesFiltradas.length
+  const [quantidadeEscolhida, setQuantidadeEscolhida] = useState(10)
+  const quantidadeFinal = Math.min(quantidadeEscolhida, quantidadeMaxima)
 
-  const comecar = () => {
-    if (max === 0) return
+  const iniciarTreino = () => {
+    if (quantidadeMaxima === 0) return
     onComecar({
-      questoes: montarQuestoes(filtradas, { embaralhar: true, sortearN: nFinal }),
+      questoes: montarQuestoes(questoesFiltradas, { embaralhar: true, sortearN: quantidadeFinal }),
       duracaoSeg: null,
       modo,
       titulo: 'Banco de perguntas',
@@ -44,8 +44,15 @@ export default function BancoPerguntas({ questoes, onComecar, onVoltar }) {
       <Filtro titulo="Banca" opcoes={bancas} valor={banca} onEscolher={setBanca} />
 
       <div className="flex flex-col gap-2">
-        <div className="text-xs uppercase tracking-widest text-muted">quantidade ({nFinal} de {max})</div>
-        <input type="range" min="1" max={Math.max(1, max)} value={nFinal} onChange={(e) => setN(Number(e.target.value))} className="accent-primaria" />
+        <div className="text-xs uppercase tracking-widest text-muted">quantidade ({quantidadeFinal} de {quantidadeMaxima})</div>
+        <input
+          type="range"
+          min="1"
+          max={Math.max(1, quantidadeMaxima)}
+          value={quantidadeFinal}
+          onChange={(evento) => setQuantidadeEscolhida(Number(evento.target.value))}
+          className="accent-primaria"
+        />
       </div>
 
       <div className="flex flex-col gap-2">
@@ -57,11 +64,11 @@ export default function BancoPerguntas({ questoes, onComecar, onVoltar }) {
       </div>
 
       <button
-        onClick={comecar}
-        disabled={max === 0}
+        onClick={iniciarTreino}
+        disabled={quantidadeMaxima === 0}
         className="flex items-center justify-center gap-2 px-8 py-3 rounded-xl bg-primaria text-white font-bold hover:bg-primaria-escura transition disabled:opacity-40"
       >
-        <Play size={20} weight="fill" /> {max === 0 ? 'sem questões' : 'começar'}
+        <Play size={20} weight="fill" /> {quantidadeMaxima === 0 ? 'sem questões' : 'começar'}
       </button>
     </main>
   )
@@ -72,15 +79,15 @@ function Filtro({ titulo, opcoes, valor, onEscolher }) {
     <div className="flex flex-col gap-2">
       <div className="text-xs uppercase tracking-widest text-muted">{titulo}</div>
       <div className="flex flex-wrap gap-2">
-        {opcoes.map((o) => (
+        {opcoes.map((opcao) => (
           <button
-            key={o}
-            onClick={() => onEscolher(o)}
+            key={opcao}
+            onClick={() => onEscolher(opcao)}
             className={`px-3 py-1 rounded-full text-sm border transition ${
-              valor === o ? 'bg-primaria text-white border-primaria' : 'border-linha hover:border-primaria'
+              valor === opcao ? 'bg-primaria text-white border-primaria' : 'border-linha hover:border-primaria'
             }`}
           >
-            {o}
+            {opcao}
           </button>
         ))}
       </div>

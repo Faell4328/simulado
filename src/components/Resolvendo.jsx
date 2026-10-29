@@ -17,10 +17,10 @@ export default function Resolvendo({ questoes, respostas, onResponder, duracaoSe
   const [marcadas, setMarcadas] = useState(new Set(inicial?.marcadas ?? []))
   const [reveladas, setReveladas] = useState(new Set(inicial?.reveladas ?? []))
   const [destaques, setDestaques] = useState(inicial?.destaques ?? {})
-  const [ferramenta, setFerramenta] = useState(null)
+  const [ferramentaAtiva, setFerramentaAtiva] = useState(null)
   const [segundos, setSegundos] = useState(inicial?.segundos ?? (duracaoSeg ?? 0))
   const [ajuda, setAjuda] = useState(false)
-  const timer = useRef(null)
+  const intervaloTimer = useRef(null)
   // segundos num ref pra o autosave ler o valor atual sem salvar a cada tique.
   const segundosRef = useRef(segundos)
   useEffect(() => { segundosRef.current = segundos }, [segundos])
@@ -31,108 +31,121 @@ export default function Resolvendo({ questoes, respostas, onResponder, duracaoSe
   // Finalizar manual (botões/Enter): confirma se ainda há questões em branco.
   // O ref garante respostas atuais mesmo dentro do handler de teclado.
   const finalizarManual = () => {
-    const faltam = questoes.filter((x) => respostas[x.id] === undefined).length
-    if (faltam > 0 && !window.confirm(`Faltam ${faltam} questão(ões) sem responder. Finalizar mesmo assim?`)) return
+    const questoesEmBranco = questoes.filter((questao) => respostas[questao.id] === undefined).length
+    if (questoesEmBranco > 0 && !window.confirm(`Faltam ${questoesEmBranco} questão(ões) sem responder. Finalizar mesmo assim?`)) return
     onFinalizar()
   }
   const manualRef = useRef(finalizarManual)
   useEffect(() => { manualRef.current = finalizarManual })
 
   useEffect(() => {
-    timer.current = setInterval(() => {
-      setSegundos((s) => {
+    intervaloTimer.current = setInterval(() => {
+      setSegundos((segundosAtuais) => {
         if (duracaoSeg != null) {
-          if (s <= 1) { clearInterval(timer.current); finalizarRef.current(); return 0 }
-          return s - 1
+          if (segundosAtuais <= 1) { clearInterval(intervaloTimer.current); finalizarRef.current(); return 0 }
+          return segundosAtuais - 1
         }
-        return s + 1
+        return segundosAtuais + 1
       })
     }, 1000)
-    return () => clearInterval(timer.current)
+    return () => clearInterval(intervaloTimer.current)
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [])
 
-  const q = questoes[indice]
-  const revelarAtual = modo === 'estudo' && reveladas.has(q.id)
-  const destaquesQuestao = destaques[q.id] || SEM_DESTAQUES
-  const grifando = ferramenta === 'grifar'
-  const apagando = ferramenta === 'apagar'
-  const alternarFerramenta = (f) => setFerramenta((atual) => (atual === f ? null : f))
+  const questaoAtual = questoes[indice]
+  const revelarQuestaoAtual = modo === 'estudo' && reveladas.has(questaoAtual.id)
+  const destaquesDaQuestao = destaques[questaoAtual.id] || SEM_DESTAQUES
+  const grifando = ferramentaAtiva === 'grifar'
+  const apagando = ferramentaAtiva === 'apagar'
+  const alternarFerramenta = (ferramenta) => setFerramentaAtiva((ferramentaAnterior) => (ferramentaAnterior === ferramenta ? null : ferramenta))
 
-  const responder = (id, valor) => {
-    if (modo === 'estudo' && reveladas.has(id)) return
-    onResponder(id, valor)
-    if (modo === 'estudo') setReveladas((s) => new Set(s).add(id))
+  const responderQuestao = (idQuestao, valor) => {
+    if (modo === 'estudo' && reveladas.has(idQuestao)) return
+    onResponder(idQuestao, valor)
+    if (modo === 'estudo') setReveladas((reveladasAtuais) => new Set(reveladasAtuais).add(idQuestao))
   }
-  const riscar = (alt) => setRiscadas((r) => {
-    const q0 = { ...(r[q.id] || {}) }; q0[alt] = !q0[alt]; return { ...r, [q.id]: q0 }
+  const riscar = (alternativa) => setRiscadas((riscadasAtuais) => {
+    const riscadasDaQuestao = { ...(riscadasAtuais[questaoAtual.id] || {}) }
+    riscadasDaQuestao[alternativa] = !riscadasDaQuestao[alternativa]
+    return { ...riscadasAtuais, [questaoAtual.id]: riscadasDaQuestao }
   })
-  const marcar = () => setMarcadas((s) => {
-    const n = new Set(s); n.has(q.id) ? n.delete(q.id) : n.add(q.id); return n
+  const marcar = () => setMarcadas((marcadasAtuais) => {
+    const novasMarcadas = new Set(marcadasAtuais)
+    if (novasMarcadas.has(questaoAtual.id)) novasMarcadas.delete(questaoAtual.id)
+    else novasMarcadas.add(questaoAtual.id)
+    return novasMarcadas
   })
-  const marcarSelecao = ({ inicio, fim }) => setDestaques((d) => ({
-    ...d,
-    [q.id]: adicionarDestaque(d[q.id] || [], inicio, fim),
+  const marcarSelecao = ({ inicio, fim }) => setDestaques((destaquesAtuais) => ({
+    ...destaquesAtuais,
+    [questaoAtual.id]: adicionarDestaque(destaquesAtuais[questaoAtual.id] || [], inicio, fim),
   }))
-  const removerGrifo = (id) => setDestaques((d) => ({
-    ...d,
-    [q.id]: removerDestaque(d[q.id] || [], id),
+  const removerGrifo = (id) => setDestaques((destaquesAtuais) => ({
+    ...destaquesAtuais,
+    [questaoAtual.id]: removerDestaque(destaquesAtuais[questaoAtual.id] || [], id),
   }))
   const removerTodosGrifos = () => {
     if (!window.confirm('Remover todos os grifos desta questão?')) return
-    setDestaques((d) => ({ ...d, [q.id]: [] }))
+    setDestaques((destaquesAtuais) => ({ ...destaquesAtuais, [questaoAtual.id]: [] }))
   }
-  const ir = (delta) => setIndice((i) => Math.max(0, Math.min(questoes.length - 1, i + delta)))
-  const estadoAtual = (seg = segundos) => ({ indice, segundos: seg, marcadas: [...marcadas], reveladas: [...reveladas], riscadas, destaques })
-  const pausar = () => onPausar(estadoAtual())
+  const navegar = (deslocamento) =>
+    setIndice((indiceAtual) => Math.max(0, Math.min(questoes.length - 1, indiceAtual + deslocamento)))
+  const obterEstadoAtual = (segundosAtuais = segundos) => ({
+    indice,
+    segundos: segundosAtuais,
+    marcadas: [...marcadas],
+    reveladas: [...reveladas],
+    riscadas,
+    destaques,
+  })
+  const pausar = () => onPausar(obterEstadoAtual())
 
   // Auto-salva o progresso a cada resposta/navegação/marcação (não a cada
   // segundo). Assim, se a aba fechar no meio, dá pra retomar de onde parou.
   useEffect(() => {
     if (!onAutosave) return
-    onAutosave(estadoAtual(segundosRef.current))
+    onAutosave(obterEstadoAtual(segundosRef.current))
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [indice, respostas, marcadas, reveladas, riscadas, destaques])
 
   useEffect(() => {
-    if (apagando && destaquesQuestao.length === 0) setFerramenta(null)
-  }, [apagando, destaquesQuestao.length])
+    if (apagando && destaquesDaQuestao.length === 0) setFerramentaAtiva(null)
+  }, [apagando, destaquesDaQuestao.length])
 
   // Avisa antes de fechar/recarregar a aba durante a prova (evita perder tudo).
   useEffect(() => {
-    const antes = (e) => { e.preventDefault(); e.returnValue = '' }
-    window.addEventListener('beforeunload', antes)
-    return () => window.removeEventListener('beforeunload', antes)
+    const avisarSaida = (evento) => { evento.preventDefault(); evento.returnValue = '' }
+    window.addEventListener('beforeunload', avisarSaida)
+    return () => window.removeEventListener('beforeunload', avisarSaida)
   }, [])
 
   // Atalhos de teclado: A–E / 1–5, C/E, setas, M (marcar), Enter (avançar).
   useEffect(() => {
-    const onKey = (e) => {
-      if (e.target.tagName === 'INPUT' || e.target.tagName === 'TEXTAREA') return
-      const k = e.key.toLowerCase()
-      if (k === '?') return setAjuda((a) => !a)
-      if (k === 'escape') return setAjuda(false)
-      if (k === 'arrowleft') return ir(-1)
-      if (k === 'arrowright') return ir(1)
-      if (k === 'm') return marcar()
-      if (k === 'enter') return indice < questoes.length - 1 ? ir(1) : manualRef.current()
-      if (q.tipo === 'certo_errado') {
-        if (k === 'c') responder(q.id, true)
-        if (k === 'e') responder(q.id, false)
+    const aoPressionarTecla = (evento) => {
+      if (evento.target.tagName === 'INPUT' || evento.target.tagName === 'TEXTAREA') return
+      const tecla = evento.key.toLowerCase()
+      if (tecla === '?') return setAjuda((ajudaAtual) => !ajudaAtual)
+      if (tecla === 'escape') return setAjuda(false)
+      if (tecla === 'arrowleft') return navegar(-1)
+      if (tecla === 'arrowright') return navegar(1)
+      if (tecla === 'm') return marcar()
+      if (tecla === 'enter') return indice < questoes.length - 1 ? navegar(1) : manualRef.current()
+      if (questaoAtual.tipo === 'certo_errado') {
+        if (tecla === 'c') responderQuestao(questaoAtual.id, true)
+        if (tecla === 'e') responderQuestao(questaoAtual.id, false)
       } else {
-        const letra = 'abcde'.indexOf(k)
-        if (letra >= 0 && letra < q.alternativas.length) return responder(q.id, letra)
-        const num = Number(k)
-        if (num >= 1 && num <= q.alternativas.length) responder(q.id, num - 1)
+        const indiceLetra = 'abcde'.indexOf(tecla)
+        if (indiceLetra >= 0 && indiceLetra < questaoAtual.alternativas.length) return responderQuestao(questaoAtual.id, indiceLetra)
+        const numero = Number(tecla)
+        if (numero >= 1 && numero <= questaoAtual.alternativas.length) responderQuestao(questaoAtual.id, numero - 1)
       }
     }
-    window.addEventListener('keydown', onKey)
-    return () => window.removeEventListener('keydown', onKey)
+    window.addEventListener('keydown', aoPressionarTecla)
+    return () => window.removeEventListener('keydown', aoPressionarTecla)
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [indice, q, modo, reveladas, marcadas])
+  }, [indice, questaoAtual, modo, reveladas, marcadas])
 
-  const respondidas = questoes.filter((x) => respostas[x.id] !== undefined).length
-  const marcada = marcadas.has(q.id)
+  const quantidadeRespondidas = questoes.filter((questao) => respostas[questao.id] !== undefined).length
+  const questaoMarcada = marcadas.has(questaoAtual.id)
 
   return (
     <div>
@@ -146,7 +159,7 @@ export default function Resolvendo({ questoes, respostas, onResponder, duracaoSe
       <div className="fixed left-2 top-1/2 z-10 -translate-y-1/2 flex flex-col gap-1 rounded-2xl border border-linha bg-cartao p-1.5 shadow-lg animar-pop">
         <button
           onClick={() => alternarFerramenta('grifar')}
-          onMouseDown={(e) => e.preventDefault()}
+          onMouseDown={(evento) => evento.preventDefault()}
           aria-pressed={grifando}
           aria-label="marca texto"
           title="marca texto: ative e selecione o texto que quer grifar"
@@ -159,7 +172,7 @@ export default function Resolvendo({ questoes, respostas, onResponder, duracaoSe
         <div className="h-px w-6 mx-auto bg-linha" />
         <button
           onClick={() => alternarFerramenta('apagar')}
-          disabled={destaquesQuestao.length === 0}
+          disabled={destaquesDaQuestao.length === 0}
           aria-pressed={apagando}
           aria-label="remover grifo"
           title="remover grifo: ative e clique no grifo que quer remover"
@@ -172,7 +185,7 @@ export default function Resolvendo({ questoes, respostas, onResponder, duracaoSe
         <div className="h-px w-6 mx-auto bg-linha" />
         <button
           onClick={removerTodosGrifos}
-          disabled={destaquesQuestao.length === 0}
+          disabled={destaquesDaQuestao.length === 0}
           aria-label="remover tudo"
           title="remover todos os grifos desta questão"
           className="grid place-items-center w-9 h-9 rounded-xl text-muted transition hover:bg-red-50 hover:text-erro disabled:opacity-30 disabled:pointer-events-none"
@@ -183,26 +196,26 @@ export default function Resolvendo({ questoes, respostas, onResponder, duracaoSe
 
       <main key={indice} className="mx-auto max-w-2xl pl-16 pr-4 py-6 md:px-4 flex flex-col gap-5 animar-entrada">
         <div className="flex flex-wrap items-center justify-between gap-2">
-          <span className="text-sm text-muted">{respondidas}/{questoes.length} respondidas{modo === 'estudo' ? ' · modo estudo' : ''}</span>
+          <span className="text-sm text-muted">{quantidadeRespondidas}/{questoes.length} respondidas{modo === 'estudo' ? ' · modo estudo' : ''}</span>
           <button
             onClick={marcar}
             className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-sm font-semibold border transition ${
-              marcada ? 'bg-amber-100 text-amber-700 border-amber-300' : 'border-linha text-muted hover:border-amber-300'
+              questaoMarcada ? 'bg-amber-100 text-amber-700 border-amber-300' : 'border-linha text-muted hover:border-amber-300'
             }`}
           >
-            <Flag size={15} weight={marcada ? 'fill' : 'regular'} /> {marcada ? 'marcada' : 'marcar'}
+            <Flag size={15} weight={questaoMarcada ? 'fill' : 'regular'} /> {questaoMarcada ? 'marcada' : 'marcar'}
           </button>
         </div>
 
         <Questao
-          questao={q}
+          questao={questaoAtual}
           numero={indice + 1}
-          resposta={respostas[q.id]}
-          onResponder={(v) => responder(q.id, v)}
-          riscadas={riscadas[q.id] || {}}
+          resposta={respostas[questaoAtual.id]}
+          onResponder={(valor) => responderQuestao(questaoAtual.id, valor)}
+          riscadas={riscadas[questaoAtual.id] || {}}
           onRiscar={riscar}
-          revelar={revelarAtual}
-          destaques={destaquesQuestao}
+          revelar={revelarQuestaoAtual}
+          destaques={destaquesDaQuestao}
           modoMarcacao={grifando}
           modoApagar={apagando}
           onMarcarSelecao={marcarSelecao}
@@ -210,11 +223,11 @@ export default function Resolvendo({ questoes, respostas, onResponder, duracaoSe
         />
 
         <div className="flex items-center justify-between">
-          <button onClick={() => ir(-1)} disabled={indice === 0} className="flex items-center gap-1 px-4 py-2 rounded-lg border border-linha font-semibold disabled:opacity-40 hover:border-primaria transition">
+          <button onClick={() => navegar(-1)} disabled={indice === 0} className="flex items-center gap-1 px-4 py-2 rounded-lg border border-linha font-semibold disabled:opacity-40 hover:border-primaria transition">
             <CaretLeft size={16} weight="bold" /> anterior
           </button>
           {indice < questoes.length - 1 ? (
-            <button onClick={() => ir(1)} className="flex items-center gap-1 px-4 py-2 rounded-lg bg-tinta text-fundo font-semibold hover:opacity-90 transition">
+            <button onClick={() => navegar(1)} className="flex items-center gap-1 px-4 py-2 rounded-lg bg-tinta text-fundo font-semibold hover:opacity-90 transition">
               próxima <CaretRight size={16} weight="bold" />
             </button>
           ) : (
@@ -256,15 +269,15 @@ function ModalAtalhos({ onFechar }) {
   ]
   return (
     <div className="fixed inset-0 z-40 grid place-items-center bg-black/40 p-4 animar-fade" onClick={onFechar}>
-      <div className="w-full max-w-sm rounded-2xl bg-cartao border border-linha p-5 flex flex-col gap-3" onClick={(e) => e.stopPropagation()}>
+      <div className="w-full max-w-sm rounded-2xl bg-cartao border border-linha p-5 flex flex-col gap-3" onClick={(evento) => evento.stopPropagation()}>
         <div className="flex items-center justify-between">
           <h2 className="font-bold flex items-center gap-2"><Keyboard size={18} /> atalhos de teclado</h2>
           <button onClick={onFechar} className="text-muted hover:text-erro" aria-label="fechar"><X size={18} /></button>
         </div>
         <div className="flex flex-col gap-1.5">
-          {atalhos.map(([tecla, desc]) => (
+          {atalhos.map(([tecla, descricao]) => (
             <div key={tecla} className="flex items-center justify-between text-sm">
-              <span className="text-muted">{desc}</span>
+              <span className="text-muted">{descricao}</span>
               <kbd className="px-2 py-0.5 rounded-md border border-linha bg-fundo font-mono text-xs">{tecla}</kbd>
             </div>
           ))}

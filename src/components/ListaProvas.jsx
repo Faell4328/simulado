@@ -1,48 +1,46 @@
 import { useRef, useState } from 'react'
 import { ArrowLeft, Timer, ListNumbers, UploadSimple, Trash, User, MagnifyingGlass, DownloadSimpleIcon } from '@phosphor-icons/react'
-import { baixarProva} from '../lib/baixarArquivo.js'
+import { baixarProva } from '../lib/baixarArquivo.js'
 import { getProvasUsuario } from '../lib/provasUsuario'
 
 // Lista de provas: embutidas + as que o usuário subiu do PC. Busca por texto e
 // filtros por banca/órgão/ano, upload de prova (.json) e remover as próprias.
 export default function ListaProvas({ provas, onSelecionar, onSubir, onRemover, onVoltar }) {
-  const bancas = ['todas', ...new Set(provas.map((p) => p.banca).filter(Boolean))]
-  const orgaos = ['todos', ...new Set(provas.map((p) => p.orgao).filter(Boolean))]
-  const anos = ['todos', ...[...new Set(provas.map((p) => p.ano).filter(Boolean))].sort((a, b) => b - a)]
+  const bancas = ['todas', ...new Set(provas.map((prova) => prova.banca).filter(Boolean))]
+  const orgaos = ['todos', ...new Set(provas.map((prova) => prova.orgao).filter(Boolean))]
+  const anos = ['todos', ...[...new Set(provas.map((prova) => prova.ano).filter(Boolean))].sort((a, b) => b - a)]
   const [banca, setBanca] = useState('todas')
   const [orgao, setOrgao] = useState('todos')
   const [ano, setAno] = useState('todos')
   const [busca, setBusca] = useState('')
-  const [msg, setMsg] = useState(null)
-  const inputRef = useRef(null)
+  const [mensagem, setMensagem] = useState(null)
+  const inputArquivoRef = useRef(null)
 
-  const termo = busca.trim().toLowerCase()
-  const filtradas = provas.filter((p) =>
-    (banca === 'todas' || p.banca === banca) &&
-    (orgao === 'todos' || p.orgao === orgao) &&
-    (ano === 'todos' || p.ano === ano) &&
-    (!termo || `${p.titulo} ${p.banca} ${p.orgao || ''} ${p.ano || ''}`.toLowerCase().includes(termo)),
+  const termoBusca = busca.trim().toLowerCase()
+  const provasFiltradas = provas.filter((prova) =>
+    (banca === 'todas' || prova.banca === banca) &&
+    (orgao === 'todos' || prova.orgao === orgao) &&
+    (ano === 'todos' || prova.ano === ano) &&
+    (!termoBusca || `${prova.titulo} ${prova.banca} ${prova.orgao || ''} ${prova.ano || ''}`.toLowerCase().includes(termoBusca)),
   )
 
-  const escolherArquivo = async (e) => {
-    const file = e.target.files?.[0]
-    e.target.value = '' // permite subir o mesmo arquivo de novo
-    if (!file) return
+  const escolherArquivo = async (evento) => {
+    const arquivo = evento.target.files?.[0]
+    evento.target.value = '' // permite subir o mesmo arquivo de novo
+    if (!arquivo) return
     try {
-      const avisos = await onSubir(file)
-      setMsg(avisos.length
+      const avisos = await onSubir(arquivo)
+      setMensagem(avisos.length
         ? { tipo: 'aviso', texto: `prova adicionada, mas confira: ${avisos.slice(0, 2).join('; ')}` }
         : { tipo: 'ok', texto: 'prova adicionada!' })
-    } catch (err) {
-      setMsg({ tipo: 'erro', texto: err.message || 'não deu pra ler o arquivo' })
+    } catch (erro) {
+      setMensagem({ tipo: 'erro', texto: erro.message || 'não deu pra ler o arquivo' })
     }
   }
 
-  const buscarProva = (idProva) => {
-    let provas = getProvasUsuario();
-    return provas.find((prova) => {
-      return prova.id === idProva;
-    });
+  const encontrarProvaUsuario = (idProva) => {
+    const provasUsuario = getProvasUsuario()
+    return provasUsuario.find((prova) => prova.id === idProva)
   }
 
   return (
@@ -53,19 +51,19 @@ export default function ListaProvas({ provas, onSelecionar, onSubir, onRemover, 
         </button>
         <h1 className="text-lg font-bold">Provas</h1>
         <button
-          onClick={() => inputRef.current?.click()}
+          onClick={() => inputArquivoRef.current?.click()}
           className="ml-auto flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-primaria text-white text-sm font-semibold hover:bg-primaria-escura transition"
         >
           <UploadSimple size={16} weight="bold" /> subir prova
         </button>
-        <input ref={inputRef} type="file" accept="application/json,.json" onChange={escolherArquivo} className="hidden" />
+        <input ref={inputArquivoRef} type="file" accept="application/json,.json" onChange={escolherArquivo} className="hidden" />
       </div>
 
-      {msg && (
+      {mensagem && (
         <div className={`text-sm rounded-lg px-3 py-2 ${
-          msg.tipo === 'erro' ? 'bg-red-50 text-erro' : msg.tipo === 'aviso' ? 'bg-amber-50 text-amber-700' : 'bg-green-50 text-acerto'
+          mensagem.tipo === 'erro' ? 'bg-red-50 text-erro' : mensagem.tipo === 'aviso' ? 'bg-amber-50 text-amber-700' : 'bg-green-50 text-acerto'
         }`}>
-          {msg.texto}
+          {mensagem.texto}
         </div>
       )}
 
@@ -73,7 +71,7 @@ export default function ListaProvas({ provas, onSelecionar, onSubir, onRemover, 
         <MagnifyingGlass size={16} className="text-muted shrink-0" />
         <input
           value={busca}
-          onChange={(e) => setBusca(e.target.value)}
+          onChange={(evento) => setBusca(evento.target.value)}
           placeholder="buscar por título, banca, órgão ou ano"
           className="flex-1 bg-transparent text-sm outline-none"
         />
@@ -84,39 +82,43 @@ export default function ListaProvas({ provas, onSelecionar, onSubir, onRemover, 
       {anos.length > 1 && <Chips titulo="Ano" opcoes={anos} valor={ano} onEscolher={setAno} />}
 
       <div className="flex flex-col gap-3">
-        {filtradas.length === 0 && (
+        {provasFiltradas.length === 0 && (
           <p className="text-muted text-center py-10">nenhuma prova encontrada com esses filtros.</p>
         )}
-        {filtradas.map((p) => (
-          <div key={p.id} className="rounded-xl bg-cartao border border-linha hover:border-primaria cartao-hover flex items-stretch overflow-hidden">
-            <button onClick={() => onSelecionar(p)} className="flex-1 p-4 text-left">
+        {provasFiltradas.map((prova) => (
+          <div key={prova.id} className="rounded-xl bg-cartao border border-linha hover:border-primaria cartao-hover flex items-stretch overflow-hidden">
+            <button onClick={() => onSelecionar(prova)} className="flex-1 p-4 text-left">
               <div className="font-bold flex items-center gap-2">
-                {p.titulo}
-                {p.origem === 'usuario' && (
+                {prova.titulo}
+                {prova.origem === 'usuario' && (
                   <span className="inline-flex items-center gap-1 text-[11px] font-semibold text-primaria bg-primaria-clara px-2 py-0.5 rounded-full">
                     <User size={11} weight="fill" /> sua
                   </span>
                 )}
               </div>
               <div className="text-sm text-muted mt-1 flex flex-wrap gap-x-4 gap-y-1">
-                <span>{p.banca}</span>
-                {p.orgao && <span>{p.orgao}</span>}
-                {p.ano && <span>{p.ano}</span>}
-                <span className="flex items-center gap-1"><ListNumbers size={15} /> {p.questoes.length} questões</span>
-                <span className="flex items-center gap-1"><Timer size={15} /> {p.tempoMin} min</span>
+                <span>{prova.banca}</span>
+                {prova.orgao && <span>{prova.orgao}</span>}
+                {prova.ano && <span>{prova.ano}</span>}
+                <span className="flex items-center gap-1"><ListNumbers size={15} /> {prova.questoes.length} questões</span>
+                <span className="flex items-center gap-1"><Timer size={15} /> {prova.tempoMin} min</span>
               </div>
             </button>
-            {p.origem === 'usuario' && (
+            {prova.origem === 'usuario' && (
               <>
                 <button
-                  onClick={() => { let prova = buscarProva(p.id); prova ? baixarProva(prova) : setMsg({ tipo: "erro", texto: "Erro ao baixar a questão" }); }}
+                  onClick={() => {
+                    const provaUsuario = encontrarProvaUsuario(prova.id)
+                    if (provaUsuario) baixarProva(provaUsuario)
+                    else setMensagem({ tipo: 'erro', texto: 'Erro ao baixar a questão' })
+                  }}
                   className="px-3 text-muted hover:text-acerto border-l border-linha"
                   aria-label="baixar prova" title="baixar"
                 >
                   <DownloadSimpleIcon size={18} />
                 </button>
                 <button
-                  onClick={() => onRemover(p.id)}
+                  onClick={() => onRemover(prova.id)}
                   className="px-3 text-muted hover:text-erro border-l border-linha"
                   aria-label="remover prova" title="remover"
                 >
@@ -135,15 +137,15 @@ function Chips({ titulo, opcoes, valor, onEscolher }) {
   return (
     <div className="flex flex-wrap items-center gap-2">
       <span className="text-xs uppercase tracking-wider text-muted w-12 shrink-0">{titulo}</span>
-      {opcoes.map((o) => (
+      {opcoes.map((opcao) => (
         <button
-          key={o}
-          onClick={() => onEscolher(o)}
+          key={opcao}
+          onClick={() => onEscolher(opcao)}
           className={`px-3 py-1 rounded-full text-sm border transition ${
-            valor === o ? 'bg-primaria text-white border-primaria' : 'border-linha hover:border-primaria'
+            valor === opcao ? 'bg-primaria text-white border-primaria' : 'border-linha hover:border-primaria'
           }`}
         >
-          {o}
+          {opcao}
         </button>
       ))}
     </div>

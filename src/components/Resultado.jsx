@@ -7,50 +7,52 @@ import { copiarTexto } from '../lib/copiar.js'
 // e correção completa. O resultado já foi salvo no histórico pelo App.
 export default function Resultado({ resultado, subtitulo, onVoltar, onRefazerErradas }) {
   const { acertos, erros, liquido, pontuacao, total, percentual, porMateria, detalhe } = resultado
-  const cebraspe = pontuacao === 'cebraspe'
-  const notaPrincipal = cebraspe ? liquido : acertos
+  const pontuacaoCebraspe = pontuacao === 'cebraspe'
+  const notaPrincipal = pontuacaoCebraspe ? liquido : acertos
   const [copiado, setCopiado] = useState(false)
-  const erradas = detalhe.filter((d) => !d.certa).map((d) => d.questao)
+  const questoesErradas = detalhe.filter((resultadoQuestao) => !resultadoQuestao.certa).map((resultadoQuestao) => resultadoQuestao.questao)
 
-  const texto =
+  const textoCompartilhado =
     `simulado.tche.studio\n` +
     `${subtitulo ? subtitulo + '\n' : ''}` +
-    `Acertei ${notaPrincipal}/${total} (${percentual}%${cebraspe ? ' líquido' : ''}).`
+    `Acertei ${notaPrincipal}/${total} (${percentual}%${pontuacaoCebraspe ? ' líquido' : ''}).`
 
   const compartilhar = async () => {
     if (navigator.share) {
-      try { await navigator.share({ text: texto }); return }
-      catch (e) { if (e?.name === 'AbortError') return }
+      try { await navigator.share({ text: textoCompartilhado }); return }
+      catch (erro) { if (erro?.name === 'AbortError') return }
     }
-    if (await copiarTexto(texto)) { setCopiado(true); setTimeout(() => setCopiado(false), 1800) }
+    if (await copiarTexto(textoCompartilhado)) { setCopiado(true); setTimeout(() => setCopiado(false), 1800) }
   }
 
-  const descreverAlternativa = (questao, valor) => {
-    if (valor === undefined || valor === null) return 'em branco'
-    if (questao.tipo === 'certo_errado') return valor ? 'Certo' : 'Errado'
-    const alternativa = (questao.alternativas || [])[valor]
-    return `${String.fromCharCode(65 + valor)}) ${alternativa ?? '?'}`
+  const descreverAlternativa = (questao, valorResposta) => {
+    if (valorResposta === undefined || valorResposta === null) return 'em branco'
+    if (questao.tipo === 'certo_errado') return valorResposta ? 'Certo' : 'Errado'
+    const alternativa = (questao.alternativas || [])[valorResposta]
+    return `${String.fromCharCode(65 + valorResposta)}) ${alternativa ?? '?'}`
   }
 
   const formatarQuestao = (resultadoQuestao, indice) => {
     const { questao, resposta } = resultadoQuestao
     const linhas = [`${indice + 1}. [${questao.materia} · ${questao.banca} - ${questao.ano || ''}]`]
     linhas.push(questao.enunciado)
-    ;(questao.alternativas || []).forEach((alternativa, posicao) => linhas.push(`${String.fromCharCode(65 + posicao)}) ${alternativa}`))
+    ;(questao.alternativas || []).forEach((alternativa, indiceAlternativa) =>
+      linhas.push(`${String.fromCharCode(65 + indiceAlternativa)}) ${alternativa}`),
+    )
     linhas.push(`Resposta marcada: ${descreverAlternativa(questao, resposta)}`)
     linhas.push(`Gabarito: ${descreverAlternativa(questao, questao.gabarito)}`)
     return linhas.join('\n')
   }
 
-  const montarPrompt = async () => {
+  const montarPromptRevisao = async () => {
     const questoesCertas = []
-    const questoesErradas = []
+    const questoesErradasNoPrompt = []
     for (const resultadoQuestao of detalhe) {
-      (resultadoQuestao.certa ? questoesCertas : questoesErradas).push(resultadoQuestao)
+      (resultadoQuestao.certa ? questoesCertas : questoesErradasNoPrompt).push(resultadoQuestao)
     }
-    const formatarLista = (resultados) =>
-      resultados.length
-        ? resultados.map((resultadoQuestao, indice) => formatarQuestao(resultadoQuestao, indice)).join('\n\n')
+    const formatarLista = (resultadosQuestoes) =>
+      resultadosQuestoes.length
+        ? resultadosQuestoes.map((resultadoQuestao, indice) => formatarQuestao(resultadoQuestao, indice)).join('\n\n')
         : '(nenhuma)'
 
     const prompt =
@@ -59,7 +61,7 @@ export default function Resultado({ resultado, subtitulo, onVoltar, onRefazerErr
       `e apontando o que devo reforçar.\n\n` +
       `Resultado: acertei ${notaPrincipal} de ${total} questões.\n\n` +
       `Questões que acertei:\n${formatarLista(questoesCertas)}\n\n` +
-      `Questões que errei:\n${formatarLista(questoesErradas)}`
+      `Questões que errei:\n${formatarLista(questoesErradasNoPrompt)}`
     if (await copiarTexto(prompt)) { setCopiado(true); setTimeout(() => setCopiado(false), 1800) }
   }
 
@@ -68,24 +70,24 @@ export default function Resultado({ resultado, subtitulo, onVoltar, onRefazerErr
       <div className="text-center flex flex-col items-center gap-1">
         <span className="text-sm uppercase tracking-widest text-muted">resultado</span>
         <span className="text-5xl font-black text-primaria animar-pop">{notaPrincipal}<span className="text-2xl text-muted">/{total}</span></span>
-        <span className="text-lg font-bold">{percentual}% {cebraspe ? 'líquido' : 'de acerto'}</span>
-        {cebraspe && <span className="text-sm text-muted">{acertos} acertos · {erros} erros (nota líquida Cebraspe)</span>}
+        <span className="text-lg font-bold">{percentual}% {pontuacaoCebraspe ? 'líquido' : 'de acerto'}</span>
+        {pontuacaoCebraspe && <span className="text-sm text-muted">{acertos} acertos · {erros} erros (nota líquida Cebraspe)</span>}
         {subtitulo && <span className="text-sm text-muted">{subtitulo}</span>}
       </div>
 
       <section className="rounded-xl bg-cartao border border-linha p-4">
         <div className="text-sm font-semibold text-muted mb-3">desempenho por matéria</div>
         <div className="flex flex-col gap-2">
-          {Object.entries(porMateria).map(([materia, m]) => {
-            const pct = Math.round((m.acertos / m.total) * 100)
+          {Object.entries(porMateria).map(([materia, estatisticaMateria]) => {
+            const percentualAcerto = Math.round((estatisticaMateria.acertos / estatisticaMateria.total) * 100)
             return (
               <div key={materia}>
                 <div className="flex justify-between text-sm mb-1">
                   <span>{materia}</span>
-                  <span className="text-muted tabular-nums">{m.acertos}/{m.total}</span>
+                  <span className="text-muted tabular-nums">{estatisticaMateria.acertos}/{estatisticaMateria.total}</span>
                 </div>
                 <div className="h-2 rounded-full bg-linha overflow-hidden">
-                  <div className="h-full bg-primaria" style={{ width: `${pct}%` }} />
+                  <div className="h-full bg-primaria" style={{ width: `${percentualAcerto}%` }} />
                 </div>
               </div>
             )
@@ -94,9 +96,9 @@ export default function Resultado({ resultado, subtitulo, onVoltar, onRefazerErr
       </section>
 
       <div className="relative flex flex-wrap items-center justify-center gap-3">
-        {erradas.length > 0 && (
-          <button onClick={() => onRefazerErradas(erradas)} className="flex items-center gap-2 px-5 py-2.5 rounded-lg bg-tinta text-fundo font-bold hover:opacity-90 transition">
-            <ArrowClockwise size={18} weight="bold" /> refazer as {erradas.length} erradas
+        {questoesErradas.length > 0 && (
+          <button onClick={() => onRefazerErradas(questoesErradas)} className="flex items-center gap-2 px-5 py-2.5 rounded-lg bg-tinta text-fundo font-bold hover:opacity-90 transition">
+            <ArrowClockwise size={18} weight="bold" /> refazer as {questoesErradas.length} erradas
           </button>
         )}
         <button onClick={compartilhar} className="flex items-center gap-2 px-5 py-2.5 rounded-lg bg-primaria text-white font-bold hover:bg-primaria-escura transition">
@@ -105,7 +107,7 @@ export default function Resultado({ resultado, subtitulo, onVoltar, onRefazerErr
         <button onClick={onVoltar} className="flex items-center gap-2 px-5 py-2.5 rounded-lg border border-linha font-semibold hover:border-primaria transition">
           <House size={18} weight="fill" /> início
         </button>
-        <button onClick={montarPrompt} className="flex items-center gap-2 px-5 py-2.5 rounded-lg border text-acerto border-linha font-semibold hover:border-acerto transition">
+        <button onClick={montarPromptRevisao} className="flex items-center gap-2 px-5 py-2.5 rounded-lg border text-acerto border-linha font-semibold hover:border-acerto transition">
           <Robot size={18} weight="fill" /> copiar prompt para revisar com a IA
         </button>
         {copiado && (
@@ -117,20 +119,20 @@ export default function Resultado({ resultado, subtitulo, onVoltar, onRefazerErr
 
       <section className="flex flex-col gap-4">
         <div className="text-sm font-semibold text-muted">correção</div>
-        {detalhe.map((d, i) => {
-          const status = d.resposta == null ? 'branco' : d.certa ? 'certo' : 'errado'
-          const borda = { branco: 'border-linha', certo: 'border-acerto', errado: 'border-erro' }[status]
-          const aviso = {
+        {detalhe.map((resultadoQuestao, indice) => {
+          const status = resultadoQuestao.resposta == null ? 'branco' : resultadoQuestao.certa ? 'certo' : 'errado'
+          const classeBorda = { branco: 'border-linha', certo: 'border-acerto', errado: 'border-erro' }[status]
+          const mensagemStatus = {
             branco: { texto: 'Você deixou em branco essa questão', classe: 'bg-white text-black' },
             certo: { texto: 'Você acertou essa questão', classe: 'bg-green-600 text-white' },
             errado: { texto: 'Você errou essa questão', classe: 'bg-red-600 text-white' },
           }[status]
           return (
-            <div key={d.questao.id} className={`rounded-xl bg-cartao border p-4 ${borda}`}>
+            <div key={resultadoQuestao.questao.id} className={`rounded-xl bg-cartao border p-4 ${classeBorda}`}>
               <div className="block mt-1 mb-5">
-                <span className={`py-2 px-2 rounded-md ${aviso.classe}`}>{aviso.texto}</span>
+                <span className={`py-2 px-2 rounded-md ${mensagemStatus.classe}`}>{mensagemStatus.texto}</span>
               </div>
-              <Questao questao={d.questao} numero={i + 1} resposta={d.resposta} revelar />
+              <Questao questao={resultadoQuestao.questao} numero={indice + 1} resposta={resultadoQuestao.resposta} revelar />
             </div>
           )
         })}

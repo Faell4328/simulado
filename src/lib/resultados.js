@@ -1,37 +1,37 @@
 // Histórico de resultados (arquivo de save). Fica no localStorage, sem servidor,
 // e pode ser exportado/importado como um .json portátil entre computadores.
-const CHAVE = 'simulado_historico'
+const CHAVE_HISTORICO = 'simulado_historico'
 
 export function getHistorico() {
-  try { return JSON.parse(localStorage.getItem(CHAVE) || '[]') } catch { return [] }
+  try { return JSON.parse(localStorage.getItem(CHAVE_HISTORICO) || '[]') } catch { return [] }
 }
 
-function salvar(lista) {
+function salvarHistorico(historico) {
   // O histórico é secundário: se a cota estourar, não quebramos a correção.
-  try { localStorage.setItem(CHAVE, JSON.stringify(lista)) } catch { console.warn('[simulado] não deu pra salvar o histórico (armazenamento cheio)') }
+  try { localStorage.setItem(CHAVE_HISTORICO, JSON.stringify(historico)) } catch { console.warn('[simulado] não deu pra salvar o histórico (armazenamento cheio)') }
 }
 
 export function registrarResultado({ provaId, titulo, origem, acertos, total, percentual }) {
-  const lista = getHistorico()
-  lista.push({ provaId, titulo, origem, acertos, total, percentual, data: new Date().toISOString() })
-  salvar(lista)
-  return lista
+  const historico = getHistorico()
+  historico.push({ provaId, titulo, origem, acertos, total, percentual, data: new Date().toISOString() })
+  salvarHistorico(historico)
+  return historico
 }
 
 export function limparHistorico() {
-  localStorage.removeItem(CHAVE)
+  localStorage.removeItem(CHAVE_HISTORICO)
 }
 
 // Melhor resultado + nº de tentativas por prova (para a tela de histórico).
 export function resumoPorProva() {
-  const mapa = {}
-  for (const r of getHistorico()) {
-    const m = (mapa[r.provaId] ||= { provaId: r.provaId, titulo: r.titulo, tentativas: 0, melhor: 0, ultima: null })
-    m.tentativas++
-    m.melhor = Math.max(m.melhor, r.percentual)
-    if (!m.ultima || r.data > m.ultima) m.ultima = r.data
+  const resumoPorId = {}
+  for (const resultado of getHistorico()) {
+    const resumo = (resumoPorId[resultado.provaId] ||= { provaId: resultado.provaId, titulo: resultado.titulo, tentativas: 0, melhor: 0, ultima: null })
+    resumo.tentativas++
+    resumo.melhor = Math.max(resumo.melhor, resultado.percentual)
+    if (!resumo.ultima || resultado.data > resumo.ultima) resumo.ultima = resultado.data
   }
-  return Object.values(mapa).sort((a, b) => (b.ultima || '').localeCompare(a.ultima || ''))
+  return Object.values(resumoPorId).sort((a, b) => (b.ultima || '').localeCompare(a.ultima || ''))
 }
 
 // Exporta o save como texto JSON (para baixar num arquivo).
@@ -42,11 +42,11 @@ export function exportarSave() {
 // Importa um save (mescla com o atual). Retorna quantos registros entraram.
 export function importarSave(texto) {
   const dados = JSON.parse(texto)
-  const novos = Array.isArray(dados) ? dados : dados.historico
-  if (!Array.isArray(novos)) throw new Error('save inválido')
-  const atual = getHistorico()
-  const chaves = new Set(atual.map((r) => r.provaId + r.data))
-  const add = novos.filter((r) => r && r.data && !chaves.has(r.provaId + r.data))
-  salvar([...atual, ...add])
-  return add.length
+  const resultadosImportados = Array.isArray(dados) ? dados : dados.historico
+  if (!Array.isArray(resultadosImportados)) throw new Error('save inválido')
+  const historicoAtual = getHistorico()
+  const chavesExistentes = new Set(historicoAtual.map((resultado) => resultado.provaId + resultado.data))
+  const resultadosNovos = resultadosImportados.filter((resultado) => resultado && resultado.data && !chavesExistentes.has(resultado.provaId + resultado.data))
+  salvarHistorico([...historicoAtual, ...resultadosNovos])
+  return resultadosNovos.length
 }

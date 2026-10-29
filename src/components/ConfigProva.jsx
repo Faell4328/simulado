@@ -5,21 +5,25 @@ import { ArrowLeft, Play } from '@phosphor-icons/react'
 // Tela de configuração antes de começar: tempo (sugerido pela prova, editável),
 // embaralhar, modo estudo/prova e sortear N questões.
 export default function ConfigProva({ prova, onComecar, onVoltar }) {
-  const total = prova.questoes.length
-  const temCE = prova.questoes.some((q) => q.tipo === 'certo_errado')
-  const [semLimite, setSemLimite] = useState(false)
+  const totalQuestoes = prova.questoes.length
+  const temCertoErrado = prova.questoes.some((questao) => questao.tipo === 'certo_errado')
+  const [semLimiteTempo, setSemLimiteTempo] = useState(false)
   const [tempoMin, setTempoMin] = useState(prova.tempoMin || 60)
   const [embaralhar, setEmbaralhar] = useState(false)
-  const [embaralharAlt, setEmbaralharAlt] = useState(false)
+  const [embaralharAlternativas, setEmbaralharAlternativas] = useState(false)
   const [modo, setModo] = useState('prova') // 'prova' | 'estudo'
   const [pontuacao, setPontuacao] = useState('bruto') // 'bruto' | 'cebraspe'
-  const [nQuestoes, setNQuestoes] = useState(total)
+  const [quantidadeQuestoes, setQuantidadeQuestoes] = useState(totalQuestoes)
 
-  const comecar = () => {
-    const questoes = montarQuestoes(prova.questoes, { embaralhar, embaralharAlt, sortearN: nQuestoes < total ? nQuestoes : null })
+  const iniciarProva = () => {
+    const questoes = montarQuestoes(prova.questoes, {
+      embaralhar,
+      embaralharAlt: embaralharAlternativas,
+      sortearN: quantidadeQuestoes < totalQuestoes ? quantidadeQuestoes : null,
+    })
     onComecar({
       questoes,
-      duracaoSeg: semLimite ? null : tempoMin * 60,
+      duracaoSeg: semLimiteTempo ? null : tempoMin * 60,
       modo,
       pontuacao,
       titulo: prova.titulo,
@@ -36,19 +40,19 @@ export default function ConfigProva({ prova, onComecar, onVoltar }) {
 
       <div>
         <h1 className="text-xl font-bold">{prova.titulo}</h1>
-        <div className="text-sm text-muted">{prova.banca} · {total} questões</div>
+        <div className="text-sm text-muted">{prova.banca} · {totalQuestoes} questões</div>
       </div>
 
       <Bloco titulo="Tempo">
         <div className="flex items-center gap-3">
           <input
-            type="number" min="1" value={tempoMin} disabled={semLimite}
-            onChange={(e) => setTempoMin(Math.max(1, Number(e.target.value) || 1))}
+            type="number" min="1" value={tempoMin} disabled={semLimiteTempo}
+            onChange={(evento) => setTempoMin(Math.max(1, Number(evento.target.value) || 1))}
             className="w-24 px-3 py-2 rounded-lg border border-linha disabled:opacity-40"
           />
           <span className="text-muted text-sm">minutos</span>
           <label className="ml-auto flex items-center gap-2 text-sm cursor-pointer">
-            <input type="checkbox" checked={semLimite} onChange={(e) => setSemLimite(e.target.checked)} />
+            <input type="checkbox" checked={semLimiteTempo} onChange={(evento) => setSemLimiteTempo(evento.target.checked)} />
             sem limite
           </label>
         </div>
@@ -65,27 +69,27 @@ export default function ConfigProva({ prova, onComecar, onVoltar }) {
         </div>
       </Bloco>
 
-      <Bloco titulo={`Questões (${nQuestoes} de ${total})`}>
+      <Bloco titulo={`Questões (${quantidadeQuestoes} de ${totalQuestoes})`}>
         <div className="flex flex-col gap-2">
           <input
-            type="range" min="1" max={total} value={nQuestoes}
-            onChange={(e) => setNQuestoes(Number(e.target.value))}
+            type="range" min="1" max={totalQuestoes} value={quantidadeQuestoes}
+            onChange={(evento) => setQuantidadeQuestoes(Number(evento.target.value))}
             className="accent-primaria"
           />
           <div className="flex flex-wrap gap-x-5 gap-y-1">
             <label className="flex items-center gap-2 text-sm cursor-pointer whitespace-nowrap">
-              <input type="checkbox" checked={embaralhar} onChange={(e) => setEmbaralhar(e.target.checked)} />
+              <input type="checkbox" checked={embaralhar} onChange={(evento) => setEmbaralhar(evento.target.checked)} />
               embaralhar questões
             </label>
             <label className="flex items-center gap-2 text-sm cursor-pointer whitespace-nowrap">
-              <input type="checkbox" checked={embaralharAlt} onChange={(e) => setEmbaralharAlt(e.target.checked)} />
+              <input type="checkbox" checked={embaralharAlternativas} onChange={(evento) => setEmbaralharAlternativas(evento.target.checked)} />
               embaralhar alternativas
             </label>
           </div>
         </div>
       </Bloco>
 
-      {temCE && (
+      {temCertoErrado && (
         <Bloco titulo="Pontuação">
           <div className="flex gap-2">
             <Opcao ativo={pontuacao === 'bruto'} onClick={() => setPontuacao('bruto')}>
@@ -99,7 +103,7 @@ export default function ConfigProva({ prova, onComecar, onVoltar }) {
       )}
 
       <button
-        onClick={comecar}
+        onClick={iniciarProva}
         className="flex items-center justify-center gap-2 px-8 py-3 rounded-xl bg-primaria text-white font-bold hover:bg-primaria-escura hover:shadow-lg hover:shadow-primaria/30 active:scale-[.98]"
       >
         <Play size={20} weight="fill" /> começar

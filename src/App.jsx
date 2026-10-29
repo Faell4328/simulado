@@ -17,79 +17,94 @@ import { Moon, Sun } from '@phosphor-icons/react'
 
 // Telas: inicio -> (provas -> config | banco | historico) -> resolvendo -> resultado.
 export default function App() {
-  const [tela, setTela] = useState('inicio')
+  const [telaAtual, setTelaAtual] = useState('inicio')
   const [provasUsuario, setProvasUsuario] = useState([])
   const [progresso, setProgresso] = useState(null)
-  const [provaSel, setProvaSel] = useState(null)
+  const [provaSelecionada, setProvaSelecionada] = useState(null)
   const [sessao, setSessao] = useState(null)   // { questoes, duracaoSeg, modo, titulo, provaId, origem }
   const [respostas, setRespostas] = useState({})
   const [resultado, setResultado] = useState(null)
-  const [inicialResolvendo, setInicialResolvendo] = useState(null)
+  const [estadoInicialResolvendo, setEstadoInicialResolvendo] = useState(null)
   const [tema, setTema] = useState(temaInicial)
 
   useEffect(() => { setProvasUsuario(getProvasUsuario()); setProgresso(getProgresso()) }, [])
   useEffect(() => { aplicarTema(tema); salvarTema(tema) }, [tema])
-  const provas = [...PROVAS_EMBUTIDAS, ...provasUsuario]
+  const todasAsProvas = [...PROVAS_EMBUTIDAS, ...provasUsuario]
 
-  const subirProva = async (file) => {
-    const { avisos, prova } = await lerArquivoProva(file)
+  const enviarProva = async (arquivo) => {
+    const { avisos, prova } = await lerArquivoProva(arquivo)
     const { substituiu } = adicionarProvaUsuario(prova)
     setProvasUsuario(getProvasUsuario())
     return substituiu ? ['substituiu uma prova de mesmo id', ...avisos] : avisos
   }
-  const subirPasta = async (files) => {
-    const r = await subirPastaProvas(files)
+  const enviarPasta = async (arquivos) => {
+    const resultadoUpload = await subirPastaProvas(arquivos)
     setProvasUsuario(getProvasUsuario())
-    return r
+    return resultadoUpload
   }
   const removerProva = (id) => { removerProvaUsuario(id); setProvasUsuario(getProvasUsuario()) }
 
-  const iniciarSessao = (config) => {
-    setSessao(config)
+  const iniciarSessao = (configuracaoSessao) => {
+    setSessao(configuracaoSessao)
     setRespostas({})
-    setInicialResolvendo(null)
-    setTela('resolvendo')
+    setEstadoInicialResolvendo(null)
+    setTelaAtual('resolvendo')
   }
 
-  const responder = (id, valor) => setRespostas((r) => ({ ...r, [id]: valor }))
+  const responderQuestao = (idQuestao, respostaEscolhida) =>
+    setRespostas((respostasAtuais) => ({ ...respostasAtuais, [idQuestao]: respostaEscolhida }))
 
-  const finalizar = () => {
-    const res = corrigir(sessao.questoes, respostas, { pontuacao: sessao.pontuacao })
-    setResultado(res)
+  const finalizarSimulado = () => {
+    const resultadoCorrecao = corrigir(sessao.questoes, respostas, { pontuacao: sessao.pontuacao })
+    setResultado(resultadoCorrecao)
     if (sessao.origem === 'prova') {
-      registrarResultado({ provaId: sessao.provaId, titulo: sessao.titulo, origem: sessao.origem, acertos: res.acertos, total: res.total, percentual: res.percentual })
+      registrarResultado({
+        provaId: sessao.provaId,
+        titulo: sessao.titulo,
+        origem: sessao.origem,
+        acertos: resultadoCorrecao.acertos,
+        total: resultadoCorrecao.total,
+        percentual: resultadoCorrecao.percentual,
+      })
     }
     limparProgresso(sessao); setProgresso(getProgresso())
-    setTela('resultado')
+    setTelaAtual('resultado')
   }
 
   // Auto-save silencioso (chamado pelo Resolvendo a cada resposta/navegação).
-  const autosalvar = (estadoResolvendo) => {
+  const salvarAutomaticamente = (estadoResolvendo) => {
     salvarProgresso({ sessao, respostas, titulo: sessao.titulo, ...estadoResolvendo })
   }
 
   const pausar = (estadoResolvendo) => {
     salvarProgresso({ sessao, respostas, titulo: sessao.titulo, ...estadoResolvendo })
     setProgresso(getProgresso())
-    setTela('inicio')
+    setTelaAtual('inicio')
   }
 
   const retomar = () => {
-    const p = getProgresso()
-    if (!p) return
-    setSessao(p.sessao)
-    setRespostas(p.respostas || {})
-    setInicialResolvendo({ indice: p.indice, segundos: p.segundos, marcadas: p.marcadas, reveladas: p.reveladas, riscadas: p.riscadas, destaques: p.destaques })
-    setTela('resolvendo')
+    const progressoSalvo = getProgresso()
+    if (!progressoSalvo) return
+    setSessao(progressoSalvo.sessao)
+    setRespostas(progressoSalvo.respostas || {})
+    setEstadoInicialResolvendo({
+      indice: progressoSalvo.indice,
+      segundos: progressoSalvo.segundos,
+      marcadas: progressoSalvo.marcadas,
+      reveladas: progressoSalvo.reveladas,
+      riscadas: progressoSalvo.riscadas,
+      destaques: progressoSalvo.destaques,
+    })
+    setTelaAtual('resolvendo')
   }
 
-  const refazerErradas = (erradas) => {
-    iniciarSessao({ questoes: erradas, duracaoSeg: null, modo: 'estudo', titulo: 'Refazendo as erradas', provaId: null, origem: 'refazer' })
+  const refazerErradas = (questoesErradas) => {
+    iniciarSessao({ questoes: questoesErradas, duracaoSeg: null, modo: 'estudo', titulo: 'Refazendo as erradas', provaId: null, origem: 'refazer' })
   }
 
-  const voltarInicio = () => { setTela('inicio'); setResultado(null); setRespostas({}); setProgresso(getProgresso()) }
+  const voltarInicio = () => { setTelaAtual('inicio'); setResultado(null); setRespostas({}); setProgresso(getProgresso()) }
 
-  const alternarTema = () => setTema((t) => (t === 'escuro' ? 'claro' : 'escuro'))
+  const alternarTema = () => setTema((temaAtual) => (temaAtual === 'escuro' ? 'claro' : 'escuro'))
 
   return (
     <div className="min-h-screen">
@@ -102,60 +117,60 @@ export default function App() {
         {tema === 'escuro' ? <Sun size={18} weight="fill" /> : <Moon size={18} weight="fill" />}
       </button>
 
-      {tela === 'inicio' && (
+      {telaAtual === 'inicio' && (
         <Inicio
-          onProvas={() => setTela('provas')}
-          onBanco={() => setTela('banco')}
-          onHistorico={() => setTela('historico')}
-          onCriar={() => setTela('criar')}
-          onSubirPasta={subirPasta}
+          onProvas={() => setTelaAtual('provas')}
+          onBanco={() => setTelaAtual('banco')}
+          onHistorico={() => setTelaAtual('historico')}
+          onCriar={() => setTelaAtual('criar')}
+          onSubirPasta={enviarPasta}
           progresso={progresso}
           onRetomar={retomar}
         />
       )}
 
-      {tela === 'provas' && (
+      {telaAtual === 'provas' && (
         <ListaProvas
-          provas={provas}
-          onSelecionar={(p) => { setProvaSel(p); setTela('config') }}
-          onSubir={subirProva}
+          provas={todasAsProvas}
+          onSelecionar={(prova) => { setProvaSelecionada(prova); setTelaAtual('config') }}
+          onSubir={enviarProva}
           onRemover={removerProva}
           onVoltar={voltarInicio}
         />
       )}
 
-      {tela === 'config' && provaSel && (
-        <ConfigProva prova={provaSel} onComecar={iniciarSessao} onVoltar={() => setTela('provas')} />
+      {telaAtual === 'config' && provaSelecionada && (
+        <ConfigProva prova={provaSelecionada} onComecar={iniciarSessao} onVoltar={() => setTelaAtual('provas')} />
       )}
 
-      {tela === 'banco' && (
-        <BancoPerguntas questoes={bancoDeQuestoes(provas)} onComecar={iniciarSessao} onVoltar={voltarInicio} />
+      {telaAtual === 'banco' && (
+        <BancoPerguntas questoes={bancoDeQuestoes(todasAsProvas)} onComecar={iniciarSessao} onVoltar={voltarInicio} />
       )}
 
-      {tela === 'resolvendo' && sessao && sessao.questoes.length > 0 && (
+      {telaAtual === 'resolvendo' && sessao && sessao.questoes.length > 0 && (
         <Resolvendo
           questoes={sessao.questoes}
           respostas={respostas}
-          onResponder={responder}
+          onResponder={responderQuestao}
           duracaoSeg={sessao.duracaoSeg}
           modo={sessao.modo}
           subtitulo={sessao.titulo}
-          onFinalizar={finalizar}
+          onFinalizar={finalizarSimulado}
           onPausar={pausar}
-          onAutosave={autosalvar}
-          inicial={inicialResolvendo}
+          onAutosave={salvarAutomaticamente}
+          inicial={estadoInicialResolvendo}
         />
       )}
 
-      {tela === 'resultado' && resultado && (
+      {telaAtual === 'resultado' && resultado && (
         <Resultado resultado={resultado} subtitulo={sessao?.titulo} onVoltar={voltarInicio} onRefazerErradas={refazerErradas} />
       )}
 
-      {tela === 'historico' && (
+      {telaAtual === 'historico' && (
         <Historico onVoltar={voltarInicio} />
       )}
 
-      {tela === 'criar' && (
+      {telaAtual === 'criar' && (
         <CriarProva
           onAdicionar={(prova) => { adicionarProvaUsuario(prova); setProvasUsuario(getProvasUsuario()) }}
           onVoltar={voltarInicio}

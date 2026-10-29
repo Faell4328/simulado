@@ -10,7 +10,7 @@ import { aplicarDestaques, limparMarcas, offsetsDaSelecao } from '../lib/marcaTe
 
 // O defaultUrlTransform bloqueia o esquema `data:` (usado para imagens inline
 // em SVG/base64). Libera apenas data:image; o resto continua sanitizado.
-const urlTransform = (url) => (url.startsWith('data:image/') ? url : defaultUrlTransform(url))
+const transformarUrl = (url) => (url.startsWith('data:image/') ? url : defaultUrlTransform(url))
 
 const SEM_DESTAQUES = []
 
@@ -25,32 +25,32 @@ export default function Questao({
 
   const marcarSelecao = () => {
     if (!modoMarcacao || !onMarcarSelecao) return
-    const raiz = areaEnunciado.current
+    const elementoRaiz = areaEnunciado.current
     const selecao = window.getSelection()
-    if (!raiz || !selecao || selecao.rangeCount === 0 || selecao.isCollapsed) return
-    const range = selecao.getRangeAt(0)
-    if (!raiz.contains(range.commonAncestorContainer)) return
-    const intervalo = offsetsDaSelecao(raiz, range)
-    if (!intervalo) return
-    onMarcarSelecao(intervalo)
+    if (!elementoRaiz || !selecao || selecao.rangeCount === 0 || selecao.isCollapsed) return
+    const intervaloSelecao = selecao.getRangeAt(0)
+    if (!elementoRaiz.contains(intervaloSelecao.commonAncestorContainer)) return
+    const offsetsSelecao = offsetsDaSelecao(elementoRaiz, intervaloSelecao)
+    if (!offsetsSelecao) return
+    onMarcarSelecao(offsetsSelecao)
     selecao.removeAllRanges()
   }
-  const marcarRef = useRef(marcarSelecao)
-  useEffect(() => { marcarRef.current = marcarSelecao })
+  const marcarSelecaoRef = useRef(marcarSelecao)
+  useEffect(() => { marcarSelecaoRef.current = marcarSelecao })
 
   useEffect(() => {
-    const raiz = areaEnunciado.current
-    if (!raiz) return
-    limparMarcas(raiz)
-    aplicarDestaques(raiz, destaques)
+    const elementoRaiz = areaEnunciado.current
+    if (!elementoRaiz) return
+    limparMarcas(elementoRaiz)
+    aplicarDestaques(elementoRaiz, destaques)
   }, [destaques, questao.enunciado])
 
   useEffect(() => {
     if (!modoMarcacao) return
-    marcarRef.current()
+    marcarSelecaoRef.current()
     const aoMudarSelecao = () => {
       clearTimeout(temporizadorSelecao.current)
-      temporizadorSelecao.current = setTimeout(() => marcarRef.current(), 350)
+      temporizadorSelecao.current = setTimeout(() => marcarSelecaoRef.current(), 350)
     }
     document.addEventListener('selectionchange', aoMudarSelecao)
     return () => {
@@ -59,17 +59,17 @@ export default function Questao({
     }
   }, [modoMarcacao])
 
-  const aoSoltarMouse = (e) => {
-    if (e.button !== 0) return
+  const aoSoltarMouse = (evento) => {
+    if (evento.button !== 0) return
     marcarSelecao()
   }
-  const aoClicar = (e) => {
+  const aoClicar = (evento) => {
     if (!modoApagar || !onRemoverDestaque) return
-    const marca = e.target.closest?.('mark[data-marca-texto]')
-    if (!marca) return
+    const elementoMarca = evento.target.closest?.('mark[data-marca-texto]')
+    if (!elementoMarca) return
     const selecao = window.getSelection()
     if (selecao && !selecao.isCollapsed) return
-    onRemoverDestaque(marca.dataset.marcaTexto)
+    onRemoverDestaque(elementoMarca.dataset.marcaTexto)
   }
 
   return (
@@ -91,7 +91,7 @@ export default function Questao({
           <ReactMarkdown
             remarkPlugins={[remarkMath, remarkGfm, remarkBreaks]}
             rehypePlugins={[rehypeRaw, rehypeMathjax]}
-            urlTransform={urlTransform}
+            urlTransform={transformarUrl}
             children={questao.enunciado}
           />
         </div>
@@ -100,30 +100,30 @@ export default function Questao({
 
       {questao.tipo === 'certo_errado' ? (
         <div className="flex gap-3">
-          {[{ v: true, l: 'Certo' }, { v: false, l: 'Errado' }].map(({ v, l }) => (
+          {[{ valor: true, rotulo: 'Certo' }, { valor: false, rotulo: 'Errado' }].map(({ valor, rotulo }) => (
             <Alternativa
-              key={l}
-              rotulo={l}
-              escolhida={resposta === v}
-              estado={estadoRevelar(revelar, v === questao.gabarito, resposta === v)}
-              onClick={() => onResponder(v)}
+              key={rotulo}
+              rotulo={rotulo}
+              escolhida={resposta === valor}
+              estadoVisual={calcularEstadoVisual(revelar, valor === questao.gabarito, resposta === valor)}
+              onClick={() => onResponder(valor)}
               revelar={revelar}
-              largo
+              ocuparLargura
             />
           ))}
         </div>
       ) : (
         <div className="flex flex-col gap-2">
-          {questao.alternativas.map((alt, i) => (
+          {questao.alternativas.map((alternativa, indice) => (
             <Alternativa
-              key={i}
-              letra={String.fromCharCode(65 + i)}
-              texto={alt}
-              escolhida={resposta === i}
-              riscada={!!riscadas[i]}
-              estado={estadoRevelar(revelar, i === questao.gabarito, resposta === i)}
-              onClick={() => onResponder(i)}
-              onRiscar={onRiscar ? () => onRiscar(i) : null}
+              key={indice}
+              letra={String.fromCharCode(65 + indice)}
+              texto={alternativa}
+              escolhida={resposta === indice}
+              riscada={!!riscadas[indice]}
+              estadoVisual={calcularEstadoVisual(revelar, indice === questao.gabarito, resposta === indice)}
+              onClick={() => onResponder(indice)}
+              onRiscar={onRiscar ? () => onRiscar(indice) : null}
               revelar={revelar}
             />
           ))}
@@ -135,7 +135,7 @@ export default function Questao({
           <ReactMarkdown
             remarkPlugins={[remarkMath, remarkGfm, remarkBreaks]}
             rehypePlugins={[rehypeRaw, rehypeMathjax]}
-            urlTransform={urlTransform}
+            urlTransform={transformarUrl}
             children={"**Comentário**: "+questao.comentario}
           />
         </div>
@@ -144,40 +144,40 @@ export default function Questao({
   )
 }
 
-function estadoRevelar(revelar, ehGabarito, escolhida) {
-  if (!revelar) return escolhida ? 'sel' : 'normal'
-  if (ehGabarito) return 'certo'
-  if (escolhida) return 'errado'
+function calcularEstadoVisual(revelar, eGabarito, foiEscolhida) {
+  if (!revelar) return foiEscolhida ? 'selecionada' : 'normal'
+  if (eGabarito) return 'certo'
+  if (foiEscolhida) return 'errado'
   return 'normal'
 }
 
-function Alternativa({ letra, texto, rotulo, escolhida, riscada, estado, onClick, onRiscar, revelar, largo }) {
-  const cor = {
+function Alternativa({ letra, texto, rotulo, escolhida, riscada, estadoVisual, onClick, onRiscar, revelar, ocuparLargura }) {
+  const classeCor = {
     certo: 'border-acerto bg-green-50 text-acerto',
     errado: 'border-erro bg-red-50 text-erro',
-    sel: 'border-primaria bg-primaria-clara',
+    selecionada: 'border-primaria bg-primaria-clara',
     normal: 'border-linha hover:border-primaria bg-cartao',
-  }[estado]
+  }[estadoVisual]
 
   return (
-    <div className={`flex items-center ${largo ? 'flex-1' : ''}`}>
+    <div className={`flex items-center ${ocuparLargura ? 'flex-1' : ''}`}>
       <button
         onClick={onClick}
         disabled={revelar}
-        className={`flex-1 flex items-center gap-3 rounded-xl border px-4 py-3 text-left transition ${revelar ? '' : 'hover:shadow-sm active:scale-[.995]'} ${cor} ${riscada ? 'opacity-50 line-through' : ''} ${largo ? 'justify-center font-bold' : ''}`}
+        className={`flex-1 flex items-center gap-3 rounded-xl border px-4 py-3 text-left transition ${revelar ? '' : 'hover:shadow-sm active:scale-[.995]'} ${classeCor} ${riscada ? 'opacity-50 line-through' : ''} ${ocuparLargura ? 'justify-center font-bold' : ''}`}
       >
         {letra && (
-          <span className={`shrink-0 grid place-items-center w-7 h-7 rounded-lg border text-sm font-bold ${escolhida || estado === 'certo' || estado === 'errado' ? 'border-current' : 'border-linha'}`}>
+          <span className={`shrink-0 grid place-items-center w-7 h-7 rounded-lg border text-sm font-bold ${escolhida || estadoVisual === 'certo' || estadoVisual === 'errado' ? 'border-current' : 'border-linha'}`}>
             {letra}
           </span>
         )}
         <ReactMarkdown
           remarkPlugins={[remarkMath, remarkGfm, remarkBreaks]}
           rehypePlugins={[rehypeRaw, rehypeMathjax]}
-          urlTransform={urlTransform}
+          urlTransform={transformarUrl}
           children={texto || rotulo}
         />
-        {estado === 'certo' && <Check size={18} weight="bold" />}
+        {estadoVisual === 'certo' && <Check size={18} weight="bold" />}
       </button>
       {onRiscar && !revelar && (
         <button onClick={onRiscar} className="ml-1 p-2 text-muted hover:text-erro" aria-label="riscar alternativa" title="riscar">
