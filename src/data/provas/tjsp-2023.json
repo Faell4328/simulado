@@ -24,7 +24,13 @@
       "materia": "Direito Administrativo",
       "tipo": "multipla",
       "enunciado": "São princípios expressos da Administração Pública no art. 37 da CF, EXCETO:",
-      "alternativas": ["Legalidade", "Impessoalidade", "Moralidade", "Razoabilidade", "Publicidade"],
+      "alternativas": [
+        "Legalidade",
+        "Impessoalidade",
+        "Moralidade",
+        "Razoabilidade",
+        "Publicidade"
+      ],
       "gabarito": 3,
       "comentario": "Os princípios expressos são LIMPE. Razoabilidade é princípio implícito."
     },
@@ -32,7 +38,13 @@
       "materia": "Raciocínio Lógico",
       "tipo": "multipla",
       "enunciado": "Se todo A é B, e nenhum B é C, então:",
-      "alternativas": ["Todo A é C.", "Algum A é C.", "Nenhum A é C.", "Todo C é A.", "Nada se pode concluir."],
+      "alternativas": [
+        "Todo A é C.",
+        "Algum A é C.",
+        "Nenhum A é C.",
+        "Todo C é A.",
+        "Nada se pode concluir."
+      ],
       "gabarito": 2,
       "comentario": "Se todo A está contido em B, e B não intersecta C, então nenhum A é C."
     }

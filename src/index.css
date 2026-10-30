@@ -124,4 +124,3 @@ input::placeholder, textarea::placeholder { color: rgb(var(--c-muted)); }
 
 /* botões: leve pressão ao clicar */
 button { transition: transform 0.12s ease, background-color 0.15s ease, box-shadow 0.15s ease, border-color 0.15s ease; }
-
