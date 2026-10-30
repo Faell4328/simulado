@@ -16,7 +16,10 @@ import {
   subirPastaProvas,
 } from "./lib/provasUsuario";
 import { corrigir } from "./lib/correcao";
-import { registrarResultado } from "./lib/resultados";
+import {
+  registrarResultado,
+  correcaoDoHistorico,
+} from "./lib/resultados";
 import {
   salvarProgresso,
   getProgresso,
@@ -32,6 +35,7 @@ import type {
   Questao,
   Respostas,
   ResultadoCorrecao,
+  ResultadoHistorico,
   ResultadoSubidaPasta,
   Sessao,
   Tela,
@@ -48,6 +52,9 @@ export default function App() {
   const [sessao, setSessao] = useState<Sessao | null>(null); // { questoes, duracaoSeg, modo, titulo, provaId, origem }
   const [respostas, setRespostas] = useState<Respostas>({});
   const [resultado, setResultado] = useState<ResultadoCorrecao | null>(null);
+  const [tituloResultado, setTituloResultado] = useState<string | null>(null);
+  const [resultadoVeioDoHistorico, setResultadoVeioDoHistorico] =
+    useState(false);
   const [estadoInicialResolvendo, setEstadoInicialResolvendo] =
     useState<EstadoInicialResolvendo | null>(null);
   const [tema, setTema] = useState<Tema>(temaInicial);
@@ -104,6 +111,8 @@ export default function App() {
       pontuacao: sessao.pontuacao,
     });
     setResultado(resultadoCorrecao);
+    setTituloResultado(sessao.titulo);
+    setResultadoVeioDoHistorico(false);
     if (sessao.origem === "prova" && sessao.provaId) {
       registrarResultado({
         provaId: sessao.provaId,
@@ -112,11 +121,38 @@ export default function App() {
         acertos: resultadoCorrecao.acertos,
         total: resultadoCorrecao.total,
         percentual: resultadoCorrecao.percentual,
+        pontuacao: resultadoCorrecao.pontuacao,
+        erros: resultadoCorrecao.erros,
+        liquido: resultadoCorrecao.liquido,
+        porMateria: resultadoCorrecao.porMateria,
+        detalhe: resultadoCorrecao.detalhe,
       });
     }
     limparProgresso(sessao);
     setProgresso(getProgresso());
     setTelaAtual("resultado");
+  };
+
+  // Abre a tela de Resultado de um item do histórico. Retorna false quando o
+  // save é antigo e não guardou a correção completa.
+  const abrirResultadoDoHistorico = (
+    registro: ResultadoHistorico,
+  ): boolean => {
+    const correcao = correcaoDoHistorico(registro);
+    if (!correcao) return false;
+    setResultado(correcao);
+    setTituloResultado(registro.titulo);
+    setResultadoVeioDoHistorico(true);
+    setTelaAtual("resultado");
+    return true;
+  };
+
+  const voltarDoResultado = () => {
+    if (resultadoVeioDoHistorico) {
+      setTelaAtual("historico");
+      return;
+    }
+    voltarInicio();
   };
 
   // Auto-save silencioso (chamado pelo Resolvendo a cada resposta/navegação).
@@ -253,13 +289,19 @@ export default function App() {
       {telaAtual === "resultado" && resultado && (
         <Resultado
           resultado={resultado}
-          subtitulo={sessao?.titulo}
-          onVoltar={voltarInicio}
+          subtitulo={tituloResultado}
+          voltandoDoHistorico={resultadoVeioDoHistorico}
+          onVoltar={voltarDoResultado}
           onRefazerErradas={refazerErradas}
         />
       )}
 
-      {telaAtual === "historico" && <Historico onVoltar={voltarInicio} />}
+      {telaAtual === "historico" && (
+        <Historico
+          onVoltar={voltarInicio}
+          onAbrirResultado={abrirResultadoDoHistorico}
+        />
+      )}
 
       {telaAtual === "criar" && (
         <CriarProva

@@ -1,6 +1,7 @@
 import { useState } from "react";
 import Questao from "./Questao";
 import {
+  ArrowLeft,
   House,
   ShareNetwork,
   ArrowClockwise,
@@ -19,6 +20,7 @@ type StatusCorrecao = "branco" | "certo" | "errado";
 interface ResultadoProps {
   resultado: ResultadoCorrecao;
   subtitulo?: string | null;
+  voltandoDoHistorico?: boolean;
   onVoltar: () => void;
   onRefazerErradas: (questoes: QuestaoModelo[]) => void;
 }
@@ -28,6 +30,7 @@ interface ResultadoProps {
 export default function Resultado({
   resultado,
   subtitulo,
+  voltandoDoHistorico = false,
   onVoltar,
   onRefazerErradas,
 }: ResultadoProps) {
@@ -200,7 +203,15 @@ export default function Resultado({
           onClick={onVoltar}
           className="flex items-center gap-2 px-5 py-2.5 rounded-lg border border-linha font-semibold hover:border-primaria transition"
         >
-          <House size={18} weight="fill" /> início
+          {voltandoDoHistorico ? (
+            <>
+              <ArrowLeft size={18} /> histórico
+            </>
+          ) : (
+            <>
+              <House size={18} weight="fill" /> início
+            </>
+          )}
         </button>
         <button
           onClick={montarPromptRevisao}

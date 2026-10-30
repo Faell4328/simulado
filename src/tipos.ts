@@ -149,14 +149,13 @@ export interface ResultadoHistorico {
   total: number;
   percentual: number;
   data: string;
-}
-
-export interface ResumoProva {
-  provaId: string;
-  titulo: string;
-  tentativas: number;
-  melhor: number;
-  ultima: string | null;
+  // Correção completa (guardada a partir da versão com detalhes). Resultados
+  // antigos do save podem não ter estes campos.
+  pontuacao?: TipoPontuacao;
+  erros?: number;
+  liquido?: number;
+  porMateria?: Record<string, EstatisticaMateria>;
+  detalhe?: ResultadoQuestao[];
 }
 
 export interface ArquivoProvaLido {

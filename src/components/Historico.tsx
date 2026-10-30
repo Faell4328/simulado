@@ -1,27 +1,42 @@
 import { useRef, useState } from "react";
 import type { ChangeEvent } from "react";
 import {
-  resumoPorProva,
+  listarResultados,
   exportarSave,
   importarSave,
   limparHistorico,
 } from "../lib/resultados";
 import {
   ArrowLeft,
+  CaretRight,
   DownloadSimple,
   UploadSimple,
   Trash,
 } from "@phosphor-icons/react";
-import type { ResumoProva } from "../tipos";
+import type { ResultadoHistorico } from "../tipos";
 
 interface HistoricoProps {
   onVoltar: () => void;
+  onAbrirResultado: (resultado: ResultadoHistorico) => boolean;
 }
 
-// Histórico: melhor nota e nº de tentativas por prova, com exportar/importar o
-// arquivo de save (.json) pra levar entre computadores.
-export default function Historico({ onVoltar }: HistoricoProps) {
-  const [resumos, setResumos] = useState<ResumoProva[]>(resumoPorProva());
+function formatarData(data: string): string {
+  const dataResultado = new Date(data);
+  if (Number.isNaN(dataResultado.getTime())) return "data desconhecida";
+  return dataResultado.toLocaleString("pt-BR", {
+    dateStyle: "short",
+    timeStyle: "short",
+  });
+}
+
+// Histórico: lista todos os resultados, um item por prova feita (cada novo
+// simulado entra no topo), com exportar/importar o save (.json).
+export default function Historico({
+  onVoltar,
+  onAbrirResultado,
+}: HistoricoProps) {
+  const [resultados, setResultados] =
+    useState<ResultadoHistorico[]>(listarResultados());
   const [mensagem, setMensagem] = useState<string | null>(null);
   const inputArquivoRef = useRef<HTMLInputElement | null>(null);
 
@@ -44,10 +59,14 @@ export default function Historico({ onVoltar }: HistoricoProps) {
         if (typeof leitor.result !== "string")
           throw new Error("arquivo inválido");
         const quantidadeImportada = importarSave(leitor.result);
-        setResumos(resumoPorProva());
+        setResultados(listarResultados());
         setMensagem(`${quantidadeImportada} resultado(s) importado(s).`);
-      } catch {
-        setMensagem("save inválido.");
+      } catch (erro) {
+        setMensagem(
+          erro instanceof Error && erro.message === "sem espaço"
+            ? "sem espaço no navegador para importar esse save."
+            : "save inválido.",
+        );
       }
     };
     leitor.readAsText(arquivo);
@@ -55,7 +74,15 @@ export default function Historico({ onVoltar }: HistoricoProps) {
 
   const limparTodoHistorico = () => {
     limparHistorico();
-    setResumos([]);
+    setResultados([]);
+  };
+
+  const abrirResultado = (resultado: ResultadoHistorico) => {
+    const abriu = onAbrirResultado(resultado);
+    if (!abriu)
+      setMensagem(
+        "esse resultado é de um save antigo e não guarda a correção completa.",
+      );
   };
 
   return (
@@ -93,35 +120,38 @@ export default function Historico({ onVoltar }: HistoricoProps) {
 
       {mensagem && <div className="text-sm text-muted">{mensagem}</div>}
 
-      {resumos.length === 0 ? (
+      {resultados.length === 0 ? (
         <p className="text-muted text-center py-10">
           nenhum resultado ainda. faça uma prova!
         </p>
       ) : (
         <div className="flex flex-col gap-2">
-          {resumos.map((resumoProva) => (
-            <div
-              key={resumoProva.provaId}
-              className="rounded-xl bg-cartao border border-linha p-4 flex items-center gap-4"
+          {resultados.map((resultado, indice) => (
+            <button
+              key={`${resultado.provaId}-${resultado.data}-${indice}`}
+              onClick={() => abrirResultado(resultado)}
+              title="ver a correção"
+              className="rounded-xl bg-cartao border border-linha p-4 flex items-center gap-4 text-left hover:border-primaria transition active:scale-[.99]"
             >
               <div className="flex-1 min-w-0">
-                <div className="font-bold truncate">{resumoProva.titulo}</div>
+                <div className="font-bold truncate">{resultado.titulo}</div>
                 <div className="text-sm text-muted">
-                  {resumoProva.tentativas} tentativa(s) · última{" "}
-                  {new Date(resumoProva.ultima ?? "").toLocaleDateString(
-                    "pt-BR",
-                  )}
+                  {formatarData(resultado.data)}
+                </div>
+                <div className="text-xs text-primaria font-semibold mt-1">
+                  ver correção
                 </div>
               </div>
               <div className="text-right shrink-0">
                 <div className="text-2xl font-black text-primaria tabular-nums">
-                  {resumoProva.melhor}%
+                  {resultado.percentual}%
                 </div>
                 <div className="text-[11px] text-muted uppercase tracking-wider">
-                  melhor
+                  {resultado.acertos}/{resultado.total} acertos
                 </div>
               </div>
-            </div>
+              <CaretRight size={16} className="text-muted shrink-0" />
+            </button>
           ))}
           <button
             onClick={limparTodoHistorico}
